@@ -60,8 +60,8 @@ class Ave():
         if self.pos[1] < 0:
             self.pos[1]=config.mapHeight
 
-    def actualizar(self, win, time_elapsed):
-        self.actualizarVelPos(time_elapsed)
+    def actualizar(self, win, tiempoTranscurrido):
+        self.actualizarVelPos(tiempoTranscurrido)
         self.bordePeriodico()
         self.draw(win)
     
@@ -105,7 +105,7 @@ class Ave():
 
         pygame.draw.polygon(win, self.colour, points)
 
-    def actualizarVelPos(self, time_elapsed):
+    def actualizarVelPos(self, tiempoTranscurrido):
 
         local_aves: List[Ave] = self.bandada.get_local_aves(self)
 
@@ -114,9 +114,10 @@ class Ave():
 
         self.v = self.v + direction * self.velocidad
 
-        self._pos += (self.v * time_elapsed).astype(int)
+        self._pos += (self.v * tiempoTranscurrido).astype(int)
 
     def calculate_reglas(self, local_aves):
+        #por cada regla, 
         return sum(
             [rule.evaluate(self, local_aves) * rule.peso for rule in self.reglas]
         )

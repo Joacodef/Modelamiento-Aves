@@ -10,7 +10,7 @@ def main():
 
     bandada = Bandada()
     reglasBandada = [
-        ReglaSeparacion(ponderacion=1, push_force=config.areaAlejamiento),
+        ReglaSeparacion(ponderacion=2, push_force=config.areaAlejamiento),
         ReglaAlineamiento(ponderacion=1),
         ReglaCohesion(ponderacion=0.5),
         MovAleatorio(ponderacion=1)        
@@ -21,7 +21,10 @@ def main():
     tick_length = int(1000/config.tickRate)
 
     ultimoTick = pygame.time.get_ticks()
+
+    contador = 0
     while config.running:
+        contador += 1
         win.fill(config.colorFondo)
         tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
         if tiempoUltimoTick < tick_length:
@@ -36,9 +39,14 @@ def main():
                 config.running = False
 
         # Cada vez que se hace esto, se calculan las distancias entre todas las aves (O(n**2)), para determinar cuales estan cerca:
+        #aveContador = 0
         for ave in aves:
-            ave.actualizar(win, tiempoUltimoTick/1000) 
-
+            """aveContador += 1
+            if contador == 30:
+                print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave._v)"""
+            ave.actualizar(win, tiempoUltimoTick/1000)
+        """if contador == 60:
+            contador = 0"""
         pygame.display.flip()
 
     pygame.quit()

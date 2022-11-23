@@ -4,10 +4,10 @@ mapWidth = 1000
 mapHeight = 900
 
 running = True
-tickRate = 60
+tickRate = 30
 
-numAves = 60
-areaAlejamiento = 10
+numAves = 50
+areaAlejamiento = 20
 areaDeteccion = 100
 aveVelMax = 200
 
