@@ -1,19 +1,14 @@
 import random
 from abc import ABC, abstractmethod
 from typing import List
-import logging
 
 import numpy as np
 import pygame
 
 from engine import Entity
-from fisica import fObjeto
+from engine import fObjeto
 
 from settings import GameSettings
-
-
-logger = logging.getLogger(__name__)
-
 
 class Bandada:
     def __init__(self, game_settings: GameSettings):
@@ -44,20 +39,9 @@ class Bandada:
 
 class Ave(fObjeto):
 
-    @property
-    def a(self):
-        return 0
-
-    @property
-    def pos(self):
-        return self._pos
-
-    def __init__(self, *args, bandada: Bandada, colour=None, rules=None, size=10, local_radius=200, max_velocity=30,
+    def __init__(self, *args, bandada: Bandada, colour=(0,0,0), rules=None, size=10, local_radius=200, max_velocity=30,
                  speed=20, **kwargs):
         super().__init__(*args, **kwargs)
-
-        if colour is None:
-            colour = (0,0,0)
 
         if rules is None:
             rules = list()
@@ -73,6 +57,13 @@ class Ave(fObjeto):
 
         self.rules = rules
         self.n_neighbours = 0
+        
+    def a(self):
+        return 0
+
+    @property
+    def pos(self):
+        return self._pos
 
     @property
     def v(self):
@@ -80,11 +71,9 @@ class Ave(fObjeto):
 
     @v.setter
     def v(self, v):
-
         magnitude = np.linalg.norm(v)
         if magnitude > self.max_velocity:
             v = v * (self.max_velocity/magnitude)
-
         self._v = v
 
     def draw(self, win):
@@ -117,11 +106,6 @@ class Ave(fObjeto):
 
         self._pos += (self.v * time_elapsed).astype(int)
 
-        # TODO: Game clock
-
-    def get_debug_text(self):
-        return super().get_debug_text() + f", n={self.n_neighbours}"
-
     def calculate_rules(self, local_aves):
         return sum(
             [rule.evaluate(self, local_aves) * rule.weight for rule in self.rules]
@@ -142,7 +126,6 @@ class AveRule(ABC):
     def evaluate(self, ave, local_aves: List[Ave]):
         output = self._evaluate(ave, local_aves)
         if np.isnan(output).any():
-            logger.warning(f"NaN encountered in {self.name}")
             return np.array([0, 0])
         return output
 
@@ -215,33 +198,6 @@ class CohesionRule(AveRule):
         return diff / mag
 
 
-class MoveRightRule(AveRule):
-    _name = "MoveRight"
-
-    def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
-        return np.array([10, 0])
-
-
-class FearMePunyAveRule(AveRule):
-    _name = "FearMePunyAve"
-
-    def __init__(self, *args, entity_to_fear, push_force=5, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.push_force = push_force
-        self.fearful_entity = entity_to_fear
-
-    def _evaluate(self, ave: Ave, local_aves, **kwargs):
-        direction_offsets = ave.pos - self.fearful_entity.pos
-        magnitude = np.sum(np.abs(direction_offsets) ** 2, axis=-1) ** (1. / 2)
-        normed_directions = direction_offsets / magnitude
-
-        adjusted_magnitude = (self.push_force / magnitude) ** 2
-        if self.push_force < 0:
-            adjusted_magnitude *= -1.0
-
-        return normed_directions * adjusted_magnitude
-
-
 class NoiseRule(AveRule):
     _name = "Noise"
 
@@ -250,12 +206,3 @@ class NoiseRule(AveRule):
 
     def _evaluate(self, ave, local_aves: List[Ave], **kwargs):
         return np.random.uniform(-1, 1, 2)
-
-
-class SpiralRule(AveRule):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
-        return np.cross(ave.v, np.array([0, 0, 1]))[:2]
-

@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-from enum import Enum, auto
-from typing import Dict
 
 import numpy as np
 import pygame
@@ -50,3 +48,24 @@ class CharacterEntity(Entity):
 
     def draw(self, win):
         pygame.draw.circle(win, self.colour, (int(self.pos[0]), int(self.pos[1])), self.width)
+
+
+class fObjeto(Entity, ABC):
+
+    @property
+    @abstractmethod
+    def v(self):
+        pass
+
+    @property
+    @abstractmethod
+    def a(self):
+        pass
+
+    @property
+    @abstractmethod
+    def pos(self):
+        pass
+
+    def distance_to(self, other):
+        return np.linalg.norm(self.pos - other.pos)

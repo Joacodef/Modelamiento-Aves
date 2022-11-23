@@ -18,7 +18,7 @@ def main():
     n_aves = 50
     ave_fear = 10
     ave_radius = 100
-    ave_max_speed = 200
+    ave_max_speed = 300
 
     bandada = Bandada(game_settings)
     bandada_rules: List[AveRule] = [
@@ -47,8 +47,9 @@ def main():
             if event.type == pygame.QUIT:
                 game_settings.is_running = False
 
+        # Cada vez que se hace esto, se calculan las distancias entre todas las aves (O(n**2)), para determinar cuales estan cerca:
         for entity in entities:
-            entity.update(win, time_since_last_tick/1000)
+            entity.update(win, time_since_last_tick/1000) 
 
         pygame.display.flip()
 
