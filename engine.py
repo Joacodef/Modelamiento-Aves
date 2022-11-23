@@ -1,6 +1,4 @@
 import numpy as np
-import pygame
-
 from settings import GameSettings
 
 class Entity():

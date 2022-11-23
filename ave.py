@@ -1,12 +1,8 @@
 import random
-from abc import ABC, abstractmethod
 from typing import List
-
 import numpy as np
 import pygame
-
 from engine import Entity
-
 from settings import GameSettings
 
 class Bandada:
@@ -110,14 +106,11 @@ class Ave(Entity):
         )
 
 
-class AveRule(ABC):
-    _name = "AveRule"
-
+class AveRule():
     def __init__(self, weighting: float, game_settings: GameSettings):
         self._weight = weighting
         self.game_settings = game_settings
 
-    @abstractmethod
     def _evaluate(self, ave: Ave, local_aves: List[Ave]):
         pass
 
@@ -145,8 +138,6 @@ class SimpleSeparationRule(AveRule):
         super().__init__(*args, **kwargs)
         self.push_force = push_force
 
-    _name = "Separation"
-
     def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
         n = len(local_aves)
         if n > 1:
@@ -161,8 +152,6 @@ class SimpleSeparationRule(AveRule):
 
 
 class AlignmentRule(AveRule):
-    _name = "Alignment"
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -180,14 +169,13 @@ class AlignmentRule(AveRule):
 
 
 class CohesionRule(AveRule):
-    _name = "Cohesion"
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
         if len(local_aves) == 0:
             return np.array([0, 0])
+        # "Centro de gravedad" de las aves cercanas:
         average_pos = np.array([b.pos for b in local_aves]).mean(axis=0)
         diff = average_pos - ave.pos
         mag = np.sqrt((diff**2).sum())
