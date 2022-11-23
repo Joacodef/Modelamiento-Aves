@@ -1,49 +1,43 @@
-from typing import List
-
 import pygame
-
 import config
-
-from ave import Bandada, AveRule, SimpleSeparationRule, AlignmentRule, CohesionRule, NoiseRule
+from ave import Bandada, ReglaSeparacion, ReglaAlineamiento, ReglaCohesion, MovAleatorio
 
 pygame.init()
 
 def main():
-
     pygame.display.set_caption("Aves")
-    win = pygame.display.set_mode((config.window_width, config.window_height))
-    fill_colour = (255, 255, 255)
+    win = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
     bandada = Bandada()
-    bandada_rules: List[AveRule] = [
-        CohesionRule(weighting=0.5),
-        AlignmentRule(weighting=1),
-        NoiseRule(weighting=1),
-        SimpleSeparationRule(weighting=1, push_force=config.areaAlejamiento)
+    reglasBandada = [
+        ReglaSeparacion(ponderacion=1, push_force=config.areaAlejamiento),
+        ReglaAlineamiento(ponderacion=1),
+        ReglaCohesion(ponderacion=0.5),
+        MovAleatorio(ponderacion=1)        
     ]
-    bandada.generate_aves(config.numAves, rules=bandada_rules, local_radius=config.areaDeteccion, max_velocity=config.aveVelMax)
+    bandada.generarAves(config.numAves, reglas=reglasBandada, radioLocal=config.areaDeteccion, velMax=config.aveVelMax)
 
-    entities = bandada.aves
-    tick_length = int(1000/config.ticks_per_second)
+    aves = bandada.aves
+    tick_length = int(1000/config.tickRate)
 
-    last_tick = pygame.time.get_ticks()
-    while config.is_running:
-        win.fill(fill_colour)
-        time_since_last_tick = pygame.time.get_ticks() - last_tick
-        if time_since_last_tick < tick_length:
-            pygame.time.delay(tick_length - time_since_last_tick)
+    ultimoTick = pygame.time.get_ticks()
+    while config.running:
+        win.fill(config.colorFondo)
+        tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
+        if tiempoUltimoTick < tick_length:
+            pygame.time.delay(tick_length - tiempoUltimoTick)
 
-        time_since_last_tick = pygame.time.get_ticks() - last_tick
+        tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
 
-        last_tick = pygame.time.get_ticks()
+        ultimoTick = pygame.time.get_ticks()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                config.is_running = False
+                config.running = False
 
         # Cada vez que se hace esto, se calculan las distancias entre todas las aves (O(n**2)), para determinar cuales estan cerca:
-        for entity in entities:
-            entity.update(win, time_since_last_tick/1000) 
+        for ave in aves:
+            ave.actualizar(win, tiempoUltimoTick/1000) 
 
         pygame.display.flip()
 

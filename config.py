@@ -1,20 +1,15 @@
 import numpy as np
 
+mapWidth = 1000
+mapHeight = 900
 
-window_width = 1000
-window_height = 900
+running = True
+tickRate = 60
 
-map_width = 1000
-map_height = 900
-
-camera_pos = np.array([0, 0])
-zoom = 1
-zoom_factor = 0.05
-
-is_running = True
-ticks_per_second = 144
-
-numAves = 50
+numAves = 60
 areaAlejamiento = 10
 areaDeteccion = 100
-aveVelMax = 300
+aveVelMax = 200
+
+colorFondo = (255, 255, 255)
+colorAves = (0,0,100)

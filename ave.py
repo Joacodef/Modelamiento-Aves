@@ -8,16 +8,17 @@ class Bandada:
     def __init__(self):
         self._aves: List[Ave] = None
 
-    def generate_aves(self, n_aves, rules=None, **kwargs):
+    def generarAves(self, numAves, reglas=None, radioLocal=10, velMax=10):
         self._aves = [
             Ave(
-                pos=np.array([random.randint(0, config.map_width),
-                              random.randint(0, config.map_height)]),
-                rules=rules,
+                pos=np.array([random.randint(0, config.mapWidth),
+                              random.randint(0, config.mapHeight)]),
+                reglas=reglas,
                 bandada=self,
-                **kwargs,
+                radioLocal=radioLocal,
+                velMax=velMax
             )
-            for _ in range(n_aves)
+            for _ in range(numAves)
         ]
 
     @property
@@ -25,46 +26,46 @@ class Bandada:
         return self._aves
 
     def get_local_aves(self, ave):
-        return [other_ave for other_ave in self.aves
-                if ave.distance_to(other_ave) < ave.local_radius and ave != other_ave]
+        return [otraAve for otraAve in self.aves
+                if ave.calcDistancia(otraAve) < ave.radioLocal and ave != otraAve]
 
 
 class Ave():
-    def __init__(self, pos=np.array([0, 0]), *args, bandada: Bandada, colour=(0,0,0), rules=None, size=10, local_radius=200, max_velocity=30,
-                 speed=20, **kwargs):
+    def __init__(self, pos=np.array([0, 0]), *args, bandada: Bandada, colour=config.colorAves, reglas=None, size=10, radioLocal=200, velMax=30,
+                 velocidad=20):
 
-        if rules is None:
-            rules = list()
+        if reglas is None:
+            reglas = list()
 
         self._pos = pos
         self.colour = colour
         self.bandada = bandada
         self.size = size
 
-        self.local_radius = local_radius
-        self.max_velocity = max_velocity
-        self.speed = speed
+        self.radioLocal = radioLocal
+        self.velMax = velMax
+        self.velocidad = velocidad
         self._v = np.array([0, 0])
 
-        self.rules = rules
+        self.reglas = reglas
         self.n_neighbours = 0
 
-    def check_physics(self):
-        if self.pos[0] > config.map_width:
+    def bordePeriodico(self):
+        if self.pos[0] > config.mapWidth:
             self.pos[0]=0
         if self.pos[0] < 0:
-            self.pos[0]=config.map_width
-        if self.pos[1] > config.map_height:
+            self.pos[0]=config.mapWidth
+        if self.pos[1] > config.mapHeight:
             self.pos[1]=0
         if self.pos[1] < 0:
-            self.pos[1]=config.map_height
+            self.pos[1]=config.mapHeight
 
-    def update(self, win, time_elapsed):
-        self.update_physics(time_elapsed)
-        self.check_physics()
+    def actualizar(self, win, time_elapsed):
+        self.actualizarVelPos(time_elapsed)
+        self.bordePeriodico()
         self.draw(win)
     
-    def distance_to(self, other):
+    def calcDistancia(self, other):
         return np.linalg.norm(self.pos - other.pos)
         
     def a(self):
@@ -81,8 +82,8 @@ class Ave():
     @v.setter
     def v(self, v):
         magnitude = np.linalg.norm(v)
-        if magnitude > self.max_velocity:
-            v = v * (self.max_velocity/magnitude)
+        if magnitude > self.velMax:
+            v = v * (self.velMax/magnitude)
         self._v = v
 
     def draw(self, win):
@@ -104,26 +105,26 @@ class Ave():
 
         pygame.draw.polygon(win, self.colour, points)
 
-    def update_physics(self, time_elapsed):
+    def actualizarVelPos(self, time_elapsed):
 
         local_aves: List[Ave] = self.bandada.get_local_aves(self)
 
-        direction = self.calculate_rules(local_aves)
+        direction = self.calculate_reglas(local_aves)
         self.n_neighbours = len(local_aves)
 
-        self.v = self.v + direction * self.speed
+        self.v = self.v + direction * self.velocidad
 
         self._pos += (self.v * time_elapsed).astype(int)
 
-    def calculate_rules(self, local_aves):
+    def calculate_reglas(self, local_aves):
         return sum(
-            [rule.evaluate(self, local_aves) * rule.weight for rule in self.rules]
+            [rule.evaluate(self, local_aves) * rule.peso for rule in self.reglas]
         )
 
 
-class AveRule():
-    def __init__(self, weighting: float):
-        self._weight = weighting
+class Regla():
+    def __init__(self, ponderacion: float):
+        self._peso = ponderacion
 
     def _evaluate(self, ave: Ave, local_aves: List[Ave]):
         pass
@@ -139,23 +140,23 @@ class AveRule():
         return self._name
 
     @property
-    def weight(self):
-        return self._weight
+    def peso(self):
+        return self._peso
 
-    @weight.setter
-    def weight(self, value):
-        self._weight = value
+    @peso.setter
+    def peso(self, value):
+        self._peso = value
 
 
-class SimpleSeparationRule(AveRule):
-    def __init__(self, *args, push_force=5, **kwargs):
-        super().__init__(*args, **kwargs)
+class ReglaSeparacion(Regla):
+    def __init__(self, ponderacion, push_force=5):
+        super().__init__(ponderacion)
         self.push_force = push_force
 
-    def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
+    def _evaluate(self, ave: Ave, local_aves: List[Ave]):
         n = len(local_aves)
         if n > 1:
-            direction_offsets = np.array([(ave.pos - other_ave.pos) for other_ave in local_aves])
+            direction_offsets = np.array([(ave.pos - otraAve.pos) for otraAve in local_aves])
             magnitudes = np.sum(np.abs(direction_offsets)**2, axis=-1)**(1./2)
             normed_directions = direction_offsets / magnitudes[:, np.newaxis]
             v = np.sum(normed_directions * (self.push_force/magnitudes)[:, np.newaxis], axis=0)
@@ -165,11 +166,11 @@ class SimpleSeparationRule(AveRule):
         return v
 
 
-class AlignmentRule(AveRule):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class ReglaAlineamiento(Regla):
+    def __init__(self, ponderacion):
+        super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, local_aves, **kwargs):
+    def _evaluate(self, ave: Ave, local_aves):
         other_velocities = np.array([b.v for b in local_aves])
 
         if len(other_velocities) == 0:
@@ -182,11 +183,11 @@ class AlignmentRule(AveRule):
         return v
 
 
-class CohesionRule(AveRule):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class ReglaCohesion(Regla):
+    def __init__(self, ponderacion):
+        super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, local_aves: List[Ave], **kwargs):
+    def _evaluate(self, ave: Ave, local_aves: List[Ave]):
         if len(local_aves) == 0:
             return np.array([0, 0])
         # "Centro de gravedad" de las aves cercanas:
@@ -198,9 +199,9 @@ class CohesionRule(AveRule):
         return diff / mag
 
 
-class NoiseRule(AveRule):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class MovAleatorio(Regla):
+    def __init__(self, ponderacion):
+        super().__init__(ponderacion)
 
-    def _evaluate(self, ave, local_aves: List[Ave], **kwargs):
+    def _evaluate(self, ave, local_aves: List[Ave]):
         return np.random.uniform(-1, 1, 2)
