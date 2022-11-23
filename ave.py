@@ -2,20 +2,17 @@ import random
 from typing import List
 import numpy as np
 import pygame
-from engine import Entity
-from settings import GameSettings
+import config
 
 class Bandada:
-    def __init__(self, game_settings: GameSettings):
+    def __init__(self):
         self._aves: List[Ave] = None
-        self.game_settings = game_settings
 
     def generate_aves(self, n_aves, rules=None, **kwargs):
         self._aves = [
             Ave(
-                pos=np.array([random.randint(0, self.game_settings.map_width),
-                              random.randint(0, self.game_settings.map_height)]),
-                game_settings=self.game_settings,
+                pos=np.array([random.randint(0, config.map_width),
+                              random.randint(0, config.map_height)]),
                 rules=rules,
                 bandada=self,
                 **kwargs,
@@ -27,19 +24,19 @@ class Bandada:
     def aves(self):
         return self._aves
 
-    def get_local_aves(self, ave: Entity):
+    def get_local_aves(self, ave):
         return [other_ave for other_ave in self.aves
                 if ave.distance_to(other_ave) < ave.local_radius and ave != other_ave]
 
 
-class Ave(Entity):
-    def __init__(self, *args, bandada: Bandada, colour=(0,0,0), rules=None, size=10, local_radius=200, max_velocity=30,
+class Ave():
+    def __init__(self, pos=np.array([0, 0]), *args, bandada: Bandada, colour=(0,0,0), rules=None, size=10, local_radius=200, max_velocity=30,
                  speed=20, **kwargs):
-        super().__init__(*args, **kwargs)
 
         if rules is None:
             rules = list()
 
+        self._pos = pos
         self.colour = colour
         self.bandada = bandada
         self.size = size
@@ -51,6 +48,24 @@ class Ave(Entity):
 
         self.rules = rules
         self.n_neighbours = 0
+
+    def check_physics(self):
+        if self.pos[0] > config.map_width:
+            self.pos[0]=0
+        if self.pos[0] < 0:
+            self.pos[0]=config.map_width
+        if self.pos[1] > config.map_height:
+            self.pos[1]=0
+        if self.pos[1] < 0:
+            self.pos[1]=config.map_height
+
+    def update(self, win, time_elapsed):
+        self.update_physics(time_elapsed)
+        self.check_physics()
+        self.draw(win)
+    
+    def distance_to(self, other):
+        return np.linalg.norm(self.pos - other.pos)
         
     def a(self):
         return 0
@@ -107,9 +122,8 @@ class Ave(Entity):
 
 
 class AveRule():
-    def __init__(self, weighting: float, game_settings: GameSettings):
+    def __init__(self, weighting: float):
         self._weight = weighting
-        self.game_settings = game_settings
 
     def _evaluate(self, ave: Ave, local_aves: List[Ave]):
         pass
@@ -185,8 +199,6 @@ class CohesionRule(AveRule):
 
 
 class NoiseRule(AveRule):
-    _name = "Noise"
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
