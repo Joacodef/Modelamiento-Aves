@@ -6,7 +6,6 @@ import numpy as np
 import pygame
 
 from engine import Entity
-from engine import fObjeto
 
 from settings import GameSettings
 
@@ -37,8 +36,7 @@ class Bandada:
                 if ave.distance_to(other_ave) < ave.local_radius and ave != other_ave]
 
 
-class Ave(fObjeto):
-
+class Ave(Entity):
     def __init__(self, *args, bandada: Bandada, colour=(0,0,0), rules=None, size=10, local_radius=200, max_velocity=30,
                  speed=20, **kwargs):
         super().__init__(*args, **kwargs)
