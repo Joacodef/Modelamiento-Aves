@@ -7,7 +7,7 @@ running = True
 tickRate = 30
 
 numAves = 50
-areaAlejamiento = 20
+areaAlejamiento = 10
 areaDeteccion = 100
 aveVelMax = 200
 

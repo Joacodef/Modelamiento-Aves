@@ -25,27 +25,27 @@ class Bandada:
     def aves(self):
         return self._aves
 
-    def get_local_aves(self, ave):
+    def getAvesCercanas(self, ave):
         return [otraAve for otraAve in self.aves
                 if ave.calcDistancia(otraAve) < ave.radioLocal and ave != otraAve]
 
 
 class Ave():
-    def __init__(self, pos=np.array([0, 0]), *args, bandada: Bandada, colour=config.colorAves, reglas=None, size=10, radioLocal=200, velMax=30,
+    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, reglas=None, size=10, radioLocal=200, velMax=30,
                  velocidad=20):
 
         if reglas is None:
             reglas = list()
 
         self._pos = pos
-        self.colour = colour
+        self.color = color
         self.bandada = bandada
         self.size = size
 
         self.radioLocal = radioLocal
         self.velMax = velMax
         self.velocidad = velocidad
-        self._v = np.array([0, 0])
+        self._vel = np.array([0, 0])
 
         self.reglas = reglas
         self.n_neighbours = 0
@@ -77,14 +77,14 @@ class Ave():
 
     @property
     def v(self):
-        return self._v
+        return self._vel
 
     @v.setter
     def v(self, v):
         magnitude = np.linalg.norm(v)
         if magnitude > self.velMax:
             v = v * (self.velMax/magnitude)
-        self._v = v
+        self._vel = v
 
     def draw(self, win):
         if abs(self.v).sum() == 0:
@@ -103,11 +103,11 @@ class Ave():
             -0.75*direction - 0.8*perpendicular_direction + centre,
         ]
 
-        pygame.draw.polygon(win, self.colour, points)
+        pygame.draw.polygon(win, self.color, points)
 
     def actualizarVelPos(self, tiempoTranscurrido):
 
-        local_aves: List[Ave] = self.bandada.get_local_aves(self)
+        local_aves: List[Ave] = self.bandada.getAvesCercanas(self)
 
         direction = self.calculate_reglas(local_aves)
         self.n_neighbours = len(local_aves)
@@ -172,13 +172,13 @@ class ReglaAlineamiento(Regla):
         super().__init__(ponderacion)
 
     def _evaluate(self, ave: Ave, local_aves):
-        other_velocities = np.array([b.v for b in local_aves])
+        other_velelocities = np.array([b.v for b in local_aves])
 
-        if len(other_velocities) == 0:
+        if len(other_velelocities) == 0:
             return np.array([0, 0])
 
-        magnitudes = np.sum(np.abs(other_velocities) ** 2, axis=-1) ** (1. / 2)
-        normed_directions: np.ndarray = other_velocities / magnitudes[:, np.newaxis]
+        magnitudes = np.sum(np.abs(other_velelocities) ** 2, axis=-1) ** (1. / 2)
+        normed_directions: np.ndarray = other_velelocities / magnitudes[:, np.newaxis]
 
         v: np.ndarray = normed_directions.mean(axis=0)
         return v
