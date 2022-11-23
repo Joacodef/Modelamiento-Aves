@@ -119,7 +119,7 @@ class Ave():
     def calculate_reglas(self, avesCercanas):
         # Se obtiene un "promedio ponderado" de direccion resultante tras consultar todas las reglas
         return sum(
-            [rule.evaluate(self, avesCercanas) * rule.peso for rule in self.reglas]
+            [rule.evaluar(self, avesCercanas) * rule.peso for rule in self.reglas]
         )
 
 
@@ -127,11 +127,11 @@ class Regla():
     def __init__(self, ponderacion: float):
         self._peso = ponderacion
 
-    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
+    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
         pass
 
-    def evaluate(self, ave, avesCercanas: List[Ave]):
-        output = self._evaluate(ave, avesCercanas)
+    def evaluar(self, ave, avesCercanas: List[Ave]):
+        output = self._evaluar(ave, avesCercanas)
         if np.isnan(output).any():
             return np.array([0, 0])
         return output
@@ -150,7 +150,7 @@ class ReglaSeparacion(Regla):
         super().__init__(ponderacion)
         self.fuerzaEmpuje = fuerzaEmpuje
 
-    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
+    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
         n = len(avesCercanas)
         if n > 1:
             difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
@@ -167,7 +167,7 @@ class ReglaAlineamiento(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, avesCercanas):
+    def _evaluar(self, ave: Ave, avesCercanas):
         velocidades = np.array([b.vel for b in avesCercanas])
 
         if len(velocidades) == 0:
@@ -185,7 +185,7 @@ class ReglaCohesion(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
+    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
         if len(avesCercanas) == 0:
             return np.array([0, 0])
         # "Centro de gravedad" de las aves cercanas:
@@ -201,5 +201,5 @@ class MovAleatorio(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave, avesCercanas: List[Ave]):
+    def _evaluar(self, ave, avesCercanas: List[Ave]):
         return np.random.uniform(-1, 1, 2)
