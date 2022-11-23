@@ -18,7 +18,7 @@ class Bandada:
                 radioLocal=radioLocal,
                 velMax=velMax
             )
-            for _ in range(numAves)
+            for _ in range(numAves) # que es esto?......
         ]
 
     @property
@@ -48,7 +48,7 @@ class Ave():
         self._vel = np.array([0, 0])
 
         self.reglas = reglas
-        self.n_neighbours = 0
+        self.numVecinos = 0
 
     def bordePeriodico(self):
         if self.pos[0] > config.mapWidth:
@@ -60,10 +60,10 @@ class Ave():
         if self.pos[1] < 0:
             self.pos[1]=config.mapHeight
 
-    def actualizar(self, win, tiempoTranscurrido):
+    def actualizar(self, ventana, tiempoTranscurrido):
         self.actualizarVelPos(tiempoTranscurrido)
         self.bordePeriodico()
-        self.draw(win)
+        self.draw(ventana)
     
     def calcDistancia(self, other):
         return np.linalg.norm(self.pos - other.pos)
@@ -76,50 +76,50 @@ class Ave():
         return self._pos
 
     @property
-    def v(self):
+    def vel(self):
         return self._vel
 
-    @v.setter
-    def v(self, v):
-        magnitude = np.linalg.norm(v)
-        if magnitude > self.velMax:
-            v = v * (self.velMax/magnitude)
-        self._vel = v
+    @vel.setter
+    def vel(self, vel):
+        magnitud = np.linalg.norm(vel)
+        if magnitud > self.velMax:
+            vel = vel * (self.velMax/magnitud)
+        self._vel = vel
 
-    def draw(self, win):
-        if abs(self.v).sum() == 0:
-            direction = np.array([0, 1])
+    def draw(self, ventana):
+        if abs(self.vel).sum() == 0:
+            dir = np.array([0, 1])
         else:
-            direction = self.v / np.linalg.norm(self.v)
+            dir = self.vel / np.linalg.norm(self.vel)
 
-        direction *= self.size
-        perpendicular_direction = np.cross(np.array([*direction, 0]), np.array([0, 0, 1]))[:2]
+        dir *= self.size
+        dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] # que es np.cross?
 
-        centre = self.pos
+        centro = self.pos
 
         points = [
-            0.1*direction + centre,
-            -0.75*direction + 0.8*perpendicular_direction + centre,
-            -0.75*direction - 0.8*perpendicular_direction + centre,
-        ]
+            0.1*dir + centro,
+            -0.75*dir + 0.8*dirPerpendicular + centro,
+            -0.75*dir - 0.8*dirPerpendicular + centro,
+        ] # entender mejor como funciona esto
 
-        pygame.draw.polygon(win, self.color, points)
+        pygame.draw.polygon(ventana, self.color, points)
 
     def actualizarVelPos(self, tiempoTranscurrido):
 
-        local_aves: List[Ave] = self.bandada.getAvesCercanas(self)
+        avesCercanas: List[Ave] = self.bandada.getAvesCercanas(self)
 
-        direction = self.calculate_reglas(local_aves)
-        self.n_neighbours = len(local_aves)
+        dir = self.calculate_reglas(avesCercanas)
+        self.numVecinos = len(avesCercanas)
 
-        self.v = self.v + direction * self.velocidad
+        self.vel = self.vel + dir * self.velocidad
 
-        self._pos += (self.v * tiempoTranscurrido).astype(int)
+        self._pos += (self.vel * tiempoTranscurrido).astype(int)
 
-    def calculate_reglas(self, local_aves):
-        #por cada regla, 
+    def calculate_reglas(self, avesCercanas):
+        # Se obtiene un "promedio ponderado" de direccion resultante tras consultar todas las reglas
         return sum(
-            [rule.evaluate(self, local_aves) * rule.peso for rule in self.reglas]
+            [rule.evaluate(self, avesCercanas) * rule.peso for rule in self.reglas]
         )
 
 
@@ -127,18 +127,14 @@ class Regla():
     def __init__(self, ponderacion: float):
         self._peso = ponderacion
 
-    def _evaluate(self, ave: Ave, local_aves: List[Ave]):
+    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
         pass
 
-    def evaluate(self, ave, local_aves: List[Ave]):
-        output = self._evaluate(ave, local_aves)
+    def evaluate(self, ave, avesCercanas: List[Ave]):
+        output = self._evaluate(ave, avesCercanas)
         if np.isnan(output).any():
             return np.array([0, 0])
         return output
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def peso(self):
@@ -150,49 +146,50 @@ class Regla():
 
 
 class ReglaSeparacion(Regla):
-    def __init__(self, ponderacion, push_force=5):
+    def __init__(self, ponderacion, fuerzaEmpuje=5):
         super().__init__(ponderacion)
-        self.push_force = push_force
+        self.fuerzaEmpuje = fuerzaEmpuje
 
-    def _evaluate(self, ave: Ave, local_aves: List[Ave]):
-        n = len(local_aves)
+    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
+        n = len(avesCercanas)
         if n > 1:
-            direction_offsets = np.array([(ave.pos - otraAve.pos) for otraAve in local_aves])
-            magnitudes = np.sum(np.abs(direction_offsets)**2, axis=-1)**(1./2)
-            normed_directions = direction_offsets / magnitudes[:, np.newaxis]
-            v = np.sum(normed_directions * (self.push_force/magnitudes)[:, np.newaxis], axis=0)
+            difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
+            magnitudes = np.sum(np.abs(difPosiciones)**2, axis=-1)**(1./2)
+            dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis]
+            vel = np.sum(dirNormalizadas * (self.fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
         else:
-            v = np.array([0, 0])
+            vel = np.array([0, 0])
 
-        return v
+        return vel
 
 
 class ReglaAlineamiento(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, local_aves):
-        other_velelocities = np.array([b.v for b in local_aves])
+    def _evaluate(self, ave: Ave, avesCercanas):
+        velocidades = np.array([b.vel for b in avesCercanas])
 
-        if len(other_velelocities) == 0:
+        if len(velocidades) == 0:
             return np.array([0, 0])
 
-        magnitudes = np.sum(np.abs(other_velelocities) ** 2, axis=-1) ** (1. / 2)
-        normed_directions: np.ndarray = other_velelocities / magnitudes[:, np.newaxis]
+        magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
+        dirNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
 
-        v: np.ndarray = normed_directions.mean(axis=0)
-        return v
+        # Promedio de las direcciones de las aves cercanas
+        vel: np.ndarray = dirNormalizadas.mean(axis=0)
+        return vel
 
 
 class ReglaCohesion(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave: Ave, local_aves: List[Ave]):
-        if len(local_aves) == 0:
+    def _evaluate(self, ave: Ave, avesCercanas: List[Ave]):
+        if len(avesCercanas) == 0:
             return np.array([0, 0])
         # "Centro de gravedad" de las aves cercanas:
-        average_pos = np.array([b.pos for b in local_aves]).mean(axis=0)
+        average_pos = np.array([b.pos for b in avesCercanas]).mean(axis=0)
         diff = average_pos - ave.pos
         mag = np.sqrt((diff**2).sum())
         if mag == 0:
@@ -204,5 +201,5 @@ class MovAleatorio(Regla):
     def __init__(self, ponderacion):
         super().__init__(ponderacion)
 
-    def _evaluate(self, ave, local_aves: List[Ave]):
+    def _evaluate(self, ave, avesCercanas: List[Ave]):
         return np.random.uniform(-1, 1, 2)

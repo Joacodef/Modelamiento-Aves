@@ -5,11 +5,11 @@ from ave import Bandada, ReglaSeparacion, ReglaAlineamiento, ReglaCohesion, MovA
 pygame.init()
 
 pygame.display.set_caption("Aves")
-win = pygame.display.set_mode((config.mapWidth, config.mapHeight))
+ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
 bandada = Bandada()
 reglasBandada = [
-    ReglaSeparacion(ponderacion=2, push_force=config.areaAlejamiento),
+    ReglaSeparacion(ponderacion=2, fuerzaEmpuje=config.areaAlejamiento),
     ReglaAlineamiento(ponderacion=1),
     ReglaCohesion(ponderacion=0.5),
     MovAleatorio(ponderacion=1)        
@@ -24,7 +24,7 @@ ultimoTick = pygame.time.get_ticks()
 contador = 0
 while config.running:
     contador += 1
-    win.fill(config.colorFondo)
+    ventana.fill(config.colorFondo)
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
     if tiempoUltimoTick < duracionTickMs:
         pygame.time.delay(duracionTickMs - tiempoUltimoTick) # Esperar a que se cumpla la duracion de un tick para pasar al siguiente
@@ -43,7 +43,7 @@ while config.running:
         """aveContador += 1
         if contador == 30:
             print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave._v)"""
-        ave.actualizar(win, tiempoUltimoTick/1000)
+        ave.actualizar(ventana, tiempoUltimoTick/1000)
     """if contador == 60:
         contador = 0"""
     pygame.display.flip()
