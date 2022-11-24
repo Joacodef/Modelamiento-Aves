@@ -8,12 +8,12 @@ class Bandada:
     def __init__(self):
         self._aves: List[Ave] = None
 
-    def generarAves(self, numAves, reglas=None, radioLocal=10, velMax=10):
+    def generarAves(self, numAves, radioLocal=10, velMax=10):
+        print("Num aves a generar:", numAves)
         self._aves = [
             Ave(
                 pos=np.array([random.randint(0, config.mapWidth),
                               random.randint(0, config.mapHeight)]),
-                reglas=reglas,
                 bandada=self,
                 radioLocal=radioLocal,
                 velMax=velMax
@@ -31,23 +31,16 @@ class Bandada:
 
 
 class Ave():
-    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, reglas=None, size=10, radioLocal=200, velMax=30,
+    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, size=10, radioLocal=200, velMax=30,
                  velocidad=20):
-
-        if reglas is None:
-            reglas = list()
-
         self._pos = pos
         self.color = color
         self.bandada = bandada
         self.size = size
-
         self.radioLocal = radioLocal
         self.velMax = velMax
         self.velocidad = velocidad
         self._vel = np.array([0, 0])
-
-        self.reglas = reglas
         self.numVecinos = 0
 
     def bordePeriodico(self):
@@ -109,97 +102,66 @@ class Ave():
 
         avesCercanas: List[Ave] = self.bandada.getAvesCercanas(self)
 
-        dir = self.calculate_reglas(avesCercanas)
+        dir = self.calcularReglas(avesCercanas)
         self.numVecinos = len(avesCercanas)
 
         self.vel = self.vel + dir * self.velocidad
 
         self._pos += (self.vel * tiempoTranscurrido).astype(int)
 
-    def calculate_reglas(self, avesCercanas):
+    def calcularReglas(self, avesCercanas):
         # Se obtiene un "promedio ponderado" de direccion resultante tras consultar todas las reglas
-        return sum(
-            [rule.evaluar(self, avesCercanas) * rule.peso for rule in self.reglas]
-        )
+        regla1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.areaAlejamiento, ave = self, avesCercanas=avesCercanas)
+        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, avesCercanas=avesCercanas)
+        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, avesCercanas=avesCercanas)
+        regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
+        return sum([regla1,regla2,regla3,regla4])
 
 
-class Regla():
-    def __init__(self, ponderacion: float):
-        self._peso = ponderacion
+def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, avesCercanas):
+    n = len(avesCercanas)
+    if n > 1:
+        difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
+        magnitudes = np.sum(np.abs(difPosiciones)**2, axis=-1)**(1./2)
+        magnitudes[magnitudes==0]=0.0001
+        dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis]
+        vel = np.sum(dirNormalizadas * (fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
+    else:
+        vel = np.array([0, 0])
 
-    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
-        pass
-
-    def evaluar(self, ave, avesCercanas: List[Ave]):
-        output = self._evaluar(ave, avesCercanas)
-        if np.isnan(output).any():
-            return np.array([0, 0])
-        return output
-
-    @property
-    def peso(self):
-        return self._peso
-
-    @peso.setter
-    def peso(self, value):
-        self._peso = value
+    return vel * ponderacion
 
 
-class ReglaSeparacion(Regla):
-    def __init__(self, ponderacion, fuerzaEmpuje=5):
-        super().__init__(ponderacion)
-        self.fuerzaEmpuje = fuerzaEmpuje
+def ReglaAlineamiento(ponderacion, avesCercanas):
+    if len(avesCercanas)==0:
+        return np.array([0,0])
 
-    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
-        n = len(avesCercanas)
-        if n > 1:
-            difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
-            magnitudes = np.sum(np.abs(difPosiciones)**2, axis=-1)**(1./2)
-            dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis]
-            vel = np.sum(dirNormalizadas * (self.fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
-        else:
-            vel = np.array([0, 0])
+    velocidades = np.array([b.vel for b in avesCercanas])
 
-        return vel
+    if len(velocidades) == 0:
+        return np.array([0, 0])
 
+    magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
+    #print("Cantidad aves cercanas:",len(avesCercanas),"Las magnitudes son:",magnitudes)
+    magnitudes[magnitudes==0]=0.0001
+    dirNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
 
-class ReglaAlineamiento(Regla):
-    def __init__(self, ponderacion):
-        super().__init__(ponderacion)
-
-    def _evaluar(self, ave: Ave, avesCercanas):
-        velocidades = np.array([b.vel for b in avesCercanas])
-
-        if len(velocidades) == 0:
-            return np.array([0, 0])
-
-        magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
-        dirNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
-
-        # Promedio de las direcciones de las aves cercanas
-        vel: np.ndarray = dirNormalizadas.mean(axis=0)
-        return vel
+    # Promedio de las direcciones de las aves cercanas
+    vel: np.ndarray = dirNormalizadas.mean(axis=0)
+    return vel * ponderacion
 
 
-class ReglaCohesion(Regla):
-    def __init__(self, ponderacion):
-        super().__init__(ponderacion)
-
-    def _evaluar(self, ave: Ave, avesCercanas: List[Ave]):
-        if len(avesCercanas) == 0:
-            return np.array([0, 0])
-        # "Centro de gravedad" de las aves cercanas:
-        average_pos = np.array([b.pos for b in avesCercanas]).mean(axis=0)
-        diff = average_pos - ave.pos
-        mag = np.sqrt((diff**2).sum())
-        if mag == 0:
-            return np.array([0, 0])
-        return diff / mag
+def ReglaCohesion(ponderacion, ave, avesCercanas):
+    if len(avesCercanas) == 0:
+        return np.array([0, 0])
+    # "Centro de gravedad" de las aves cercanas:
+    posPromedio = np.array([b.pos for b in avesCercanas]).mean(axis=0)
+    diff = posPromedio - ave.pos
+    mag = np.sqrt((diff**2).sum())
+    if mag == 0:
+        return np.array([0, 0])
+    return ponderacion * diff / mag
 
 
-class MovAleatorio(Regla):
-    def __init__(self, ponderacion):
-        super().__init__(ponderacion)
-
-    def _evaluar(self, ave, avesCercanas: List[Ave]):
-        return np.random.uniform(-1, 1, 2)
+def MovAleatorio(ponderacion):
+    return np.random.uniform(-1, 1, 2)*ponderacion
