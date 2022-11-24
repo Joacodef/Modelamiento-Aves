@@ -6,12 +6,13 @@ import config
 
 random.seed(20)
 
+
+
 class Bandada:
     def __init__(self):
         self._aves: List[Ave] = None
 
     def generarAves(self, numAves, radioLocal=10, velMax=10):
-        print("Num aves a generar:", numAves)
         self._aves = [
             Ave(
                 pos=np.array([random.randint(0, config.mapWidth),
@@ -61,19 +62,7 @@ class Ave():
         self.draw(ventana)
     
     def calcDistancia(self, other):
-        distX = abs(self.pos[0] - other.pos[0])
-        distY = abs(self.pos[1] - other.pos[1])
-        if distX > 5/2:
-            distX = 5 - distX
-        if distY > 5/2:
-            distY = 5 - distY
-
-        dist = (distX**2+distY**2)**(0.5)
-        return dist
-
-        
-    def a(self):
-        return 0
+        return calcDistanciaPeriodica(self.pos, other.pos)
 
     @property
     def pos(self):
@@ -132,33 +121,32 @@ class Ave():
 def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, avesCercanas):
     n = len(avesCercanas)
     if n > 1:
+        # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual
         difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
-        magnitudes = np.sum(np.abs(difPosiciones)**2, axis=-1)**(1./2)
-        magnitudes[magnitudes==0]=0.0001
-        dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis]
+        magnitudes = np.array([ave.calcDistancia(otraAve) for otraAve in avesCercanas])
+        # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
+        dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
+        # Obtener un vector
         vel = np.sum(dirNormalizadas * (fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
     else:
         vel = np.array([0, 0])
-
     return vel * ponderacion
 
 
 def ReglaAlineamiento(ponderacion, avesCercanas):
-    if len(avesCercanas)==0:
+    if len(avesCercanas)< 1:
         return np.array([0,0])
-
+    # Obtener los vectores de velocidad de las aves cercanas
     velocidades = np.array([b.vel for b in avesCercanas])
-
-    if len(velocidades) == 0:
+    if len(velocidades) < 1:
         return np.array([0, 0])
-
+    # Obtener las magnitudes de cada vector
     magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
-    #print("Cantidad aves cercanas:",len(avesCercanas),"Las magnitudes son:",magnitudes)
-    magnitudes[magnitudes==0]=0.0001
-    dirNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
-
-    # Promedio de las direcciones de las aves cercanas
-    vel: np.ndarray = dirNormalizadas.mean(axis=0)
+    magnitudes[magnitudes==0] = 0.00001
+    # Obtener vectores de velocidad normalizados
+    velNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
+    # Promedio de las direcciones de las aves cercanas, sin contar su magnitud, solo su direccion
+    vel: np.ndarray = velNormalizadas.mean(axis=0)
     return vel * ponderacion
 
 
@@ -167,7 +155,8 @@ def ReglaCohesion(ponderacion, ave, avesCercanas):
         return np.array([0, 0])
     # "Centro de gravedad" de las aves cercanas:
     posPromedio = np.array([b.pos for b in avesCercanas]).mean(axis=0)
-    diff = posPromedio - ave.pos
+    diff = calcDistEjePeriodica(posPromedio, ave.pos)
+    #diff = posPromedio - ave.pos
     mag = np.sqrt((diff**2).sum())
     if mag == 0:
         return np.array([0, 0])
@@ -176,3 +165,26 @@ def ReglaCohesion(ponderacion, ave, avesCercanas):
 
 def MovAleatorio(ponderacion):
     return np.random.uniform(-1, 1, 2)*ponderacion
+
+
+def calcDistanciaPeriodica(P1, P2):
+    distX = abs(P1[0] - P2[0])
+    distY = abs(P1[1] - P2[1])
+    if distX > config.mapWidth/2:
+        distX = config.mapWidth - distX
+    if distY > config.mapHeight/2:
+        distY = config.mapHeight - distY
+    dist = (distX**2+distY**2)**(0.5)
+    if dist == 0.0:
+        dist = 0.0000001
+    return dist
+
+def calcDistEjePeriodica(P1, P2):
+    # Obtener un vector que apunta desde P2 a P1
+    distX = P1[0] - P2[0]
+    distY = P1[1] - P2[1]
+    if abs(distX) > config.mapWidth/2:
+        distX = config.mapWidth - distX
+    if abs(distY) > config.mapHeight/2:
+        distY = config.mapHeight - distY
+    return np.array([distX, distY])

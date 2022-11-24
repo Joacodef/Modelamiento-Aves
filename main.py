@@ -34,8 +34,6 @@ while config.running:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             config.running = False
-
-    # Cada vez que se hace esto, se calculan las distancias entre todas las aves (O(n**2)), para determinar cuales estan cerca:
     
     """aveContador = 0
     contador += 1
@@ -45,11 +43,11 @@ while config.running:
         """aveContador += 1
         if contador == 30:
             print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grilla - ", coordG)"""
-
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
         ave.actualizar(ventana, tiempoUltimoTick/1000)
-        #sumarle 1 al contador de aves de esa casilla
+        # Sumarle 1 al contador de aves de esa casilla
         grilla[coordG[0],coordG[1]][0] += 1
+        # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)
         grilla[coordG[0],coordG[1]][1] += ave.vel[0]
         grilla[coordG[0],coordG[1]][2] += ave.vel[1]
     
@@ -60,7 +58,6 @@ while config.running:
             pygame.draw.line(ventana, config.colorLinea, (0,i * config.mapHeight/config.numDivisionesLado), (config.mapWidth, i * config.mapHeight/config.numDivisionesLado))
 
     # Mostrar Numeros de la grilla
-    
     for i in range(0,config.numDivisionesLado):    
         for j in range(0,config.numDivisionesLado):
             if grilla[i][j][0] != 0:

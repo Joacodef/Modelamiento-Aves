@@ -4,8 +4,8 @@ mapHeight = 1000
 running = True
 tickRate = 30
 
-numAves = 15
-areaAlejamiento = 10
+numAves = 50
+areaAlejamiento = 5
 areaDeteccion = 100
 aveVelMax = 200
 
@@ -15,9 +15,9 @@ colorLinea = (100,0,0)
 
 numDivisionesLado = 5
 
-pesoSeparacion = 2
+pesoSeparacion = 0
 pesoAlineamiento = 1
-pesoCohesion = 0.5
+pesoCohesion = 1
 pesoMovAleatorio = 1
 
 verGrilla = True
