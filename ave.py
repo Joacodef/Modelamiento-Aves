@@ -122,7 +122,7 @@ def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, avesCercanas):
     n = len(avesCercanas)
     if n > 1:
         # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual
-        difPosiciones = np.array([(ave.pos - otraAve.pos) for otraAve in avesCercanas])
+        difPosiciones = np.array([calcDistEjePeriodica(ave.pos,otraAve.pos) for otraAve in avesCercanas])
         magnitudes = np.array([ave.calcDistancia(otraAve) for otraAve in avesCercanas])
         # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
         dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
