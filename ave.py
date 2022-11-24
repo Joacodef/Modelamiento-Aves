@@ -4,6 +4,8 @@ import numpy as np
 import pygame
 import config
 
+random.seed(20)
+
 class Bandada:
     def __init__(self):
         self._aves: List[Ave] = None
@@ -59,7 +61,16 @@ class Ave():
         self.draw(ventana)
     
     def calcDistancia(self, other):
-        return np.linalg.norm(self.pos - other.pos)
+        distX = abs(self.pos[0] - other.pos[0])
+        distY = abs(self.pos[1] - other.pos[1])
+        if distX > 5/2:
+            distX = 5 - distX
+        if distY > 5/2:
+            distY = 5 - distY
+
+        dist = (distX**2+distY**2)**(0.5)
+        return dist
+
         
     def a(self):
         return 0
