@@ -9,7 +9,7 @@ pygame.display.set_caption("Aves")
 ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
 bandada = Bandada()
-bandada.generarAves(config.numAves, radioLocal=config.areaDeteccion, velMax=config.aveVelMax)
+bandada.generarAves(config.numAves, radioLocal=config.radioDeteccion, velMax=config.aveVelMax)
 aves = bandada.aves
 
 duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
@@ -21,7 +21,8 @@ altoCasilla = config.mapHeight/config.numDivisionesLado
 
 while config.running:
     # Grilla que se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
-    grilla = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
+    grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
+    #grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioDeteccion)),int(np.ceil(config.mapHeight/config.radioDeteccion))),[])
     ventana.fill(config.colorFondo)
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
     if tiempoUltimoTick < duracionTickMs:
@@ -42,18 +43,18 @@ while config.running:
     for ave in aves:
         """aveContador += 1
         if aveContador == 1 and (config.mapWidth-ave.pos[0]<3 or config.mapHeight-ave.pos[1]<3 or ave.pos[0]<5 or ave.pos[1]<5):
-            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grilla - ", coordG)
+            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grillaCampo - ", coordG)
             print("Vecinos del ave - ",[vecino.pos for vecino in bandada.get
             nas(ave)])"""
         """if contador == 30:
-            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grilla - ", coordG)"""
+            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grillaCampo - ", coordG)"""
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
         ave.actualizar(ventana, tiempoUltimoTick/1000)
         # Sumarle 1 al contador de aves de esa casilla
-        grilla[coordG[0],coordG[1]][0] += 1
+        grillaCampo[coordG[0],coordG[1]][0] += 1
         # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)
-        grilla[coordG[0],coordG[1]][1] += ave.vel[0]
-        grilla[coordG[0],coordG[1]][2] += ave.vel[1]
+        grillaCampo[coordG[0],coordG[1]][1] += ave.vel[0]
+        grillaCampo[coordG[0],coordG[1]][2] += ave.vel[1]
     
     # Mostrar Lineas de la grilla
     if config.verGrilla:
@@ -64,13 +65,17 @@ while config.running:
     # Mostrar Numeros de la grilla
     for i in range(0,config.numDivisionesLado):    
         for j in range(0,config.numDivisionesLado):
-            if grilla[i][j][0] != 0:
-                    grilla[i][j][1] /= grilla[i][j][0] # Sacar el promedio de velocidad horizontal (vel[0]/numAvesEnCasilla) 
-                    grilla[i][j][2] /= grilla[i][j][0] # Sacar el promedio de velocidad vertical
+            if grillaCampo[i][j][0] != 0:
+                    grillaCampo[i][j][1] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad horizontal (vel[0]/numAvesEnCasilla) 
+                    grillaCampo[i][j][2] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad vertical
             if config.verValoresGrilla:
-                font = pygame.font.SysFont('arial', 20)
-                text = font.render(str(grilla[i][j]), True, (0, 0, 0))
+                font = pygame.font.SysFont('arial', config.fontSize)
+                text = font.render(str(grillaCampo[i][j]), True, (0, 0, 0))
                 ventana.blit(text, [j*anchoCasilla+anchoCasilla/2-30,i*altoCasilla+altoCasilla/2-15])
     pygame.display.flip()
 
 pygame.quit()
+
+def rellenarGrillaVecinos(grillaVecinos, aves):
+    for ave in aves:
+        grillaVecinos[int(ave.pos[0]/config.mapWidth)][int(ave.pos[1]/config.mapWidth)].append(ave)

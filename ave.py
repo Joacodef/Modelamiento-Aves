@@ -111,14 +111,14 @@ class Ave():
 
     def calcularReglas(self, vecinos):
         # Se obtiene un "promedio ponderado" de direccion resultante tras consultar todas las reglas
-        regla1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.areaAlejamiento, ave = self, vecinos=vecinos)
+        regla1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, factorAlejamiento=config.factorAlejamiento, ave = self, vecinos=vecinos)
         regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos)
         regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos)
         regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
         return sum([regla1,regla2,regla3,regla4])
 
 
-def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, vecinos):
+def ReglaSeparacion(ponderacion, factorAlejamiento, ave, vecinos):
     n = len(vecinos)
     if n > 1:
         # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual
@@ -127,7 +127,7 @@ def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, vecinos):
         # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
         dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
         # Obtener un vector
-        vel = np.sum(dirNormalizadas * (fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
+        vel = np.sum(dirNormalizadas * (factorAlejamiento/magnitudes)[:, np.newaxis], axis=0)
     else:
         vel = np.array([0, 0])
     return vel * ponderacion

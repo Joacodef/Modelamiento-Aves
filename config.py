@@ -4,12 +4,10 @@ mapHeight = 500
 running = True
 tickRate = 30
 
-numAves = 60
-areaAlejamiento = 5
-areaDeteccion = 100
+numAves = 40
+factorAlejamiento = 5
+radioDeteccion = 100
 aveVelMax = 150
-
-
 
 colorFondo = (255, 255, 255)
 colorAves = (0,0,100)
@@ -24,3 +22,4 @@ pesoMovAleatorio = 1
 
 verGrilla = True
 verValoresGrilla = False
+fontSize = 15
