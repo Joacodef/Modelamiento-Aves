@@ -35,13 +35,17 @@ while config.running:
         if evento.type == pygame.QUIT:
             config.running = False
     
-    """aveContador = 0
-    contador += 1
+    aveContador = 0
+    """ contador += 1
     if contador == 31:
         contador = 0"""
     for ave in aves:
         """aveContador += 1
-        if contador == 30:
+        if aveContador == 1 and (config.mapWidth-ave.pos[0]<3 or config.mapHeight-ave.pos[1]<3 or ave.pos[0]<5 or ave.pos[1]<5):
+            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grilla - ", coordG)
+            print("Vecinos del ave - ",[vecino.pos for vecino in bandada.get
+            nas(ave)])"""
+        """if contador == 30:
             print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grilla - ", coordG)"""
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
         ave.actualizar(ventana, tiempoUltimoTick/1000)

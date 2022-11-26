@@ -3,10 +3,10 @@ from typing import List
 import numpy as np
 import pygame
 import config
+import threading
+import time
 
-random.seed(20)
-
-
+#random.seed(20)
 
 class Bandada:
     def __init__(self):
@@ -28,7 +28,7 @@ class Bandada:
     def aves(self):
         return self._aves
 
-    def getAvesCercanas(self, ave):
+    def getvecinos(self, ave):
         return [otraAve for otraAve in self.aves
                 if ave.calcDistancia(otraAve) < ave.radioLocal and ave != otraAve]
 
@@ -50,11 +50,11 @@ class Ave():
         if self.pos[0] > config.mapWidth:
             self.pos[0]=0
         if self.pos[0] < 0:
-            self.pos[0]=config.mapWidth
+            self.pos[0]=config.mapWidth + self.pos[0]
         if self.pos[1] > config.mapHeight:
             self.pos[1]=0
         if self.pos[1] < 0:
-            self.pos[1]=config.mapHeight
+            self.pos[1]=config.mapHeight + self.pos[1]
 
     def actualizar(self, ventana, tiempoTranscurrido):
         self.actualizarVelPos(tiempoTranscurrido)
@@ -100,30 +100,30 @@ class Ave():
 
     def actualizarVelPos(self, tiempoTranscurrido):
 
-        avesCercanas: List[Ave] = self.bandada.getAvesCercanas(self)
+        vecinos: List[Ave] = self.bandada.getvecinos(self)
 
-        dir = self.calcularReglas(avesCercanas)
-        self.numVecinos = len(avesCercanas)
+        dir = self.calcularReglas(vecinos)
+        self.numVecinos = len(vecinos)
 
         self.vel = self.vel + dir * self.velocidad
 
         self._pos += (self.vel * tiempoTranscurrido).astype(int)
 
-    def calcularReglas(self, avesCercanas):
+    def calcularReglas(self, vecinos):
         # Se obtiene un "promedio ponderado" de direccion resultante tras consultar todas las reglas
-        regla1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.areaAlejamiento, ave = self, avesCercanas=avesCercanas)
-        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, avesCercanas=avesCercanas)
-        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, avesCercanas=avesCercanas)
+        regla1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.areaAlejamiento, ave = self, vecinos=vecinos)
+        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos)
+        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos)
         regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
         return sum([regla1,regla2,regla3,regla4])
 
 
-def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, avesCercanas):
-    n = len(avesCercanas)
+def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, vecinos):
+    n = len(vecinos)
     if n > 1:
         # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual
-        difPosiciones = np.array([calcDistEjePeriodica(ave.pos,otraAve.pos) for otraAve in avesCercanas])
-        magnitudes = np.array([ave.calcDistancia(otraAve) for otraAve in avesCercanas])
+        difPosiciones = np.array([vectorDifPeriodica(ave.pos,otraAve.pos) for otraAve in vecinos])
+        magnitudes = np.array([ave.calcDistancia(otraAve) for otraAve in vecinos])
         # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
         dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
         # Obtener un vector
@@ -133,16 +133,14 @@ def ReglaSeparacion(ponderacion, fuerzaEmpuje, ave, avesCercanas):
     return vel * ponderacion
 
 
-def ReglaAlineamiento(ponderacion, avesCercanas):
-    if len(avesCercanas)< 1:
+def ReglaAlineamiento(ponderacion, vecinos):
+    if len(vecinos)< 1:
         return np.array([0,0])
     # Obtener los vectores de velocidad de las aves cercanas
-    velocidades = np.array([b.vel for b in avesCercanas])
-    if len(velocidades) < 1:
-        return np.array([0, 0])
+    velocidades = np.array([b.vel for b in vecinos])
     # Obtener las magnitudes de cada vector
     magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
-    magnitudes[magnitudes==0] = 0.00001
+    magnitudes[magnitudes==0] = 0.00001 # Convertir las magnitudes cero en un numero pequeño para que no haya div por cero
     # Obtener vectores de velocidad normalizados
     velNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
     # Promedio de las direcciones de las aves cercanas, sin contar su magnitud, solo su direccion
@@ -150,17 +148,23 @@ def ReglaAlineamiento(ponderacion, avesCercanas):
     return vel * ponderacion
 
 
-def ReglaCohesion(ponderacion, ave, avesCercanas):
-    if len(avesCercanas) == 0:
+def ReglaCohesion(ponderacion, ave, vecinos):
+    if len(vecinos) == 0:
         return np.array([0, 0])
-    # "Centro de gravedad" de las aves cercanas:
-    posPromedio = np.array([b.pos for b in avesCercanas]).mean(axis=0)
-    diff = calcDistEjePeriodica(posPromedio, ave.pos)
+    # "Centro de gravedad" de las aves cercanas: AQUI ESTA EL PROBLEMA
+    # COMO LAS AVES QUE PASAN POR EL BORDE TIENEN UNA POSICION AL OTRO LADO, TIRAN PARA ATRAS A SUS VECINOS
+    # posPromedio = np.array([b.pos for b in vecinos]).mean(axis=0)
+    posPromedio = 0
+    for otraAve in vecinos:
+        posVecino = ave.pos + vectorDifPeriodica(otraAve.pos,ave.pos)
+        posPromedio += posVecino
+    posPromedio = posPromedio / len(vecinos)
+    diff = vectorDifPeriodica(posPromedio, ave.pos) # vector que apunta desde el ave al centro de gravedad
     #diff = posPromedio - ave.pos
     mag = np.sqrt((diff**2).sum())
     if mag == 0:
         return np.array([0, 0])
-    return ponderacion * diff / mag
+    return ponderacion * diff / mag # Retornar vector unitario que al centro de gravedad, ponderado por el factor recibido
 
 
 def MovAleatorio(ponderacion):
@@ -168,6 +172,7 @@ def MovAleatorio(ponderacion):
 
 
 def calcDistanciaPeriodica(P1, P2):
+    # Obtener la distancia entre 2 puntos considerando las condiciones de borde periodicas
     distX = abs(P1[0] - P2[0])
     distY = abs(P1[1] - P2[1])
     if distX > config.mapWidth/2:
@@ -179,12 +184,20 @@ def calcDistanciaPeriodica(P1, P2):
         dist = 0.0000001
     return dist
 
-def calcDistEjePeriodica(P1, P2):
-    # Obtener un vector que apunta desde P2 a P1
+def vectorDifPeriodica(P1, P2):
+    # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas
     distX = P1[0] - P2[0]
     distY = P1[1] - P2[1]
+    # Ver si la distancia en uno de los ejes es mayor que la mitad del plano, se "va por el otro lado"
     if abs(distX) > config.mapWidth/2:
-        distX = config.mapWidth - distX
+        # Esto implica invertir la dirección de movimiento en ese eje también
+        if distX > 0:
+            distX = -(config.mapWidth - abs(distX))
+        else:
+            distX = (config.mapWidth - abs(distX))
     if abs(distY) > config.mapHeight/2:
-        distY = config.mapHeight - distY
+        if distY > 0:
+            distY = -(config.mapWidth - abs(distY))
+        else:
+            distY = (config.mapWidth - abs(distY))
     return np.array([distX, distY])
