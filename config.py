@@ -1,11 +1,11 @@
-mapWidth = 500
-mapHeight = 500
+mapWidth = 1000
+mapHeight = 1000
 
 running = True
 tickRate = 30
 
 numAves = 200
-factorAlejamiento = 5
+factorAlejamiento = 10
 radioDeteccion = 40
 aveVelMax = 150
 
