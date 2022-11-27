@@ -28,9 +28,18 @@ class Bandada:
     def aves(self):
         return self._aves
 
-    def getvecinos(self, ave):
-        return [otraAve for otraAve in self.aves
-                if ave.calcDistancia(otraAve) < ave.radioLocal and ave != otraAve]
+    def getvecinos(self, ave, grillaVecinos):
+        listaVecinos = []
+        posX = int(ave.pos[0]/config.radioDeteccion)
+        posY = int(ave.pos[1]/config.radioDeteccion)
+        dimXGrillaV = len(grillaVecinos[0])
+        dimYGrillaV = len(grillaVecinos)
+        #print("La pos del ave actual en la grilla vecinos es:", posX, posY)
+        for i in [(posX-1)%dimXGrillaV,posX,(posX+1)%dimXGrillaV]:
+            for j in [(posY-1)%dimYGrillaV,posY,(posY+1)%dimYGrillaV]:
+                listaVecinos += grillaVecinos[i][j]
+        #print(listaVecinos)
+        return listaVecinos
 
 
 class Ave():
@@ -56,13 +65,13 @@ class Ave():
         if self.pos[1] < 0:
             self.pos[1]=config.mapHeight + self.pos[1]
 
-    def actualizar(self, ventana, tiempoTranscurrido):
-        self.actualizarVelPos(tiempoTranscurrido)
+    def actualizar(self, ventana, tiempoTranscurrido, grillaVecinos):
+        self.actualizarVelPos(tiempoTranscurrido, grillaVecinos)
         self.bordePeriodico()
         self.draw(ventana)
     
     def calcDistancia(self, other):
-        return calcDistanciaPeriodica(self.pos, other.pos)
+        return calcDistToro(self.pos, other.pos)
 
     @property
     def pos(self):
@@ -86,7 +95,7 @@ class Ave():
             dir = self.vel / np.linalg.norm(self.vel)
 
         dir *= self.size
-        dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] # que es np.cross?
+        dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] 
 
         centro = self.pos
 
@@ -94,13 +103,13 @@ class Ave():
             0.1*dir + centro,
             -0.75*dir + 0.8*dirPerpendicular + centro,
             -0.75*dir - 0.8*dirPerpendicular + centro,
-        ] # entender mejor como funciona esto
+        ] 
 
         pygame.draw.polygon(ventana, self.color, points)
 
-    def actualizarVelPos(self, tiempoTranscurrido):
+    def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
 
-        vecinos: List[Ave] = self.bandada.getvecinos(self)
+        vecinos: List[Ave] = self.bandada.getvecinos(self, grillaVecinos)
 
         dir = self.calcularReglas(vecinos)
         self.numVecinos = len(vecinos)
@@ -122,8 +131,9 @@ def ReglaSeparacion(ponderacion, factorAlejamiento, ave, vecinos):
     n = len(vecinos)
     if n > 1:
         # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual
-        difPosiciones = np.array([vectorDifPeriodica(ave.pos,otraAve.pos) for otraAve in vecinos])
+        difPosiciones = np.array([vectorDifToro(ave.pos,otraAve.pos) for otraAve in vecinos])
         magnitudes = np.array([ave.calcDistancia(otraAve) for otraAve in vecinos])
+        magnitudes[magnitudes==0] = 0.000001
         # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
         dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
         # Obtener un vector
@@ -140,7 +150,7 @@ def ReglaAlineamiento(ponderacion, vecinos):
     velocidades = np.array([b.vel for b in vecinos])
     # Obtener las magnitudes de cada vector
     magnitudes = np.sum(np.abs(velocidades) ** 2, axis=-1) ** (1. / 2)
-    magnitudes[magnitudes==0] = 0.00001 # Convertir las magnitudes cero en un numero pequeño para que no haya div por cero
+    magnitudes[magnitudes==0] = 1 # Convertir las magnitudes cero en cualquier numero para que no haya div por cero
     # Obtener vectores de velocidad normalizados
     velNormalizadas: np.ndarray = velocidades / magnitudes[:, np.newaxis]
     # Promedio de las direcciones de las aves cercanas, sin contar su magnitud, solo su direccion
@@ -156,12 +166,12 @@ def ReglaCohesion(ponderacion, ave, vecinos):
     # posPromedio = np.array([b.pos for b in vecinos]).mean(axis=0)
     posPromedio = 0
     for otraAve in vecinos:
-        posVecino = ave.pos + vectorDifPeriodica(otraAve.pos,ave.pos)
+        posVecino = ave.pos + vectorDifToro(otraAve.pos,ave.pos)
         posPromedio += posVecino
     posPromedio = posPromedio / len(vecinos)
-    diff = vectorDifPeriodica(posPromedio, ave.pos) # vector que apunta desde el ave al centro de gravedad
+    diff = vectorDifToro(posPromedio, ave.pos) # vector que apunta desde el ave al centro de gravedad
     #diff = posPromedio - ave.pos
-    mag = np.sqrt((diff**2).sum())
+    mag = np.linalg.norm(diff)
     if mag == 0:
         return np.array([0, 0])
     return ponderacion * diff / mag # Retornar vector unitario que al centro de gravedad, ponderado por el factor recibido
@@ -171,7 +181,7 @@ def MovAleatorio(ponderacion):
     return np.random.uniform(-1, 1, 2)*ponderacion
 
 
-def calcDistanciaPeriodica(P1, P2):
+def calcDistToro(P1, P2):
     # Obtener la distancia entre 2 puntos considerando las condiciones de borde periodicas
     distX = abs(P1[0] - P2[0])
     distY = abs(P1[1] - P2[1])
@@ -179,12 +189,10 @@ def calcDistanciaPeriodica(P1, P2):
         distX = config.mapWidth - distX
     if distY > config.mapHeight/2:
         distY = config.mapHeight - distY
-    dist = (distX**2+distY**2)**(0.5)
-    if dist == 0.0:
-        dist = 0.0000001
+    dist = np.linalg.norm([distX,distY])
     return dist
 
-def vectorDifPeriodica(P1, P2):
+def vectorDifToro(P1, P2):
     # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas
     distX = P1[0] - P2[0]
     distY = P1[1] - P2[1]

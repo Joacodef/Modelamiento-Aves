@@ -3,6 +3,25 @@ import config
 import numpy as np
 from ave import Bandada
 
+dimXGrillaV = int(np.ceil(config.mapWidth/config.radioDeteccion))
+dimYGrillaV = int(np.ceil(config.mapHeight/config.radioDeteccion))
+
+def rellenarGrillaVecinos(aves):
+    grillaVecinos = []
+    for i in range(0,dimXGrillaV):
+        grillaVecinos.append([])
+        for j in range(0,dimYGrillaV):
+            grillaVecinos[i].append([])
+    for ave in aves:
+        #print("Ave en posicion: ", ave.pos)
+        if ave.pos[0] == config.mapWidth:
+            ave.pos[0] = 0
+        if ave.pos[1] == config.mapHeight:
+            ave.pos[1] = 0
+        #print("Ave puesta en posicion:",int(np.floor(ave.pos[0]/config.radioDeteccion)),int(np.floor(ave.pos[1]/config.radioDeteccion)))
+        grillaVecinos[int(ave.pos[0]/config.radioDeteccion)][int(ave.pos[1]/config.radioDeteccion)].append(ave)
+    return grillaVecinos
+
 pygame.init()
 
 pygame.display.set_caption("Aves")
@@ -14,7 +33,6 @@ aves = bandada.aves
 
 duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
 ultimoTick = pygame.time.get_ticks()
-contador = 0
 
 anchoCasilla = config.mapWidth/config.numDivisionesLado
 altoCasilla = config.mapHeight/config.numDivisionesLado
@@ -22,7 +40,7 @@ altoCasilla = config.mapHeight/config.numDivisionesLado
 while config.running:
     # Grilla que se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
     grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
-    #grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioDeteccion)),int(np.ceil(config.mapHeight/config.radioDeteccion))),[])
+    # grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioDeteccion)),int(np.ceil(config.mapHeight/config.radioDeteccion))),[])
     ventana.fill(config.colorFondo)
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
     if tiempoUltimoTick < duracionTickMs:
@@ -36,33 +54,24 @@ while config.running:
         if evento.type == pygame.QUIT:
             config.running = False
     
-    aveContador = 0
-    """ contador += 1
-    if contador == 31:
-        contador = 0"""
+    grillaVecinos = rellenarGrillaVecinos(aves)
+
     for ave in aves:
-        """aveContador += 1
-        if aveContador == 1 and (config.mapWidth-ave.pos[0]<3 or config.mapHeight-ave.pos[1]<3 or ave.pos[0]<5 or ave.pos[1]<5):
-            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grillaCampo - ", coordG)
-            print("Vecinos del ave - ",[vecino.pos for vecino in bandada.get
-            nas(ave)])"""
-        """if contador == 30:
-            print("Ave",aveContador,": posicion - ",ave.pos," velocidad - ",ave.vel," coordenadas en grillaCampo - ", coordG)"""
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
-        ave.actualizar(ventana, tiempoUltimoTick/1000)
+        ave.actualizar(ventana, tiempoUltimoTick/1000, grillaVecinos)
         # Sumarle 1 al contador de aves de esa casilla
         grillaCampo[coordG[0],coordG[1]][0] += 1
         # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)
         grillaCampo[coordG[0],coordG[1]][1] += ave.vel[0]
         grillaCampo[coordG[0],coordG[1]][2] += ave.vel[1]
-    
+
     # Mostrar Lineas de la grilla
     if config.verGrilla:
         for i in range(1,config.numDivisionesLado):
             pygame.draw.line(ventana, config.colorLinea, (i * config.mapWidth/config.numDivisionesLado,0), (i * config.mapWidth/config.numDivisionesLado, config.mapHeight))
             pygame.draw.line(ventana, config.colorLinea, (0,i * config.mapHeight/config.numDivisionesLado), (config.mapWidth, i * config.mapHeight/config.numDivisionesLado))
 
-    # Mostrar Numeros de la grilla
+    # Mostrar Numeros de la grilla y sacar promedio de velocidades
     for i in range(0,config.numDivisionesLado):    
         for j in range(0,config.numDivisionesLado):
             if grillaCampo[i][j][0] != 0:
@@ -76,6 +85,4 @@ while config.running:
 
 pygame.quit()
 
-def rellenarGrillaVecinos(grillaVecinos, aves):
-    for ave in aves:
-        grillaVecinos[int(ave.pos[0]/config.mapWidth)][int(ave.pos[1]/config.mapWidth)].append(ave)
+
