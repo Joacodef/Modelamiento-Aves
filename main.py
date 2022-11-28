@@ -1,7 +1,7 @@
 import pygame
 import config
 import numpy as np
-from ave import Bandada
+import ave
 
 dimXGrillaV = int(np.ceil(config.mapWidth/config.radioCohesion))
 dimYGrillaV = int(np.ceil(config.mapHeight/config.radioCohesion))
@@ -27,9 +27,7 @@ pygame.init()
 pygame.display.set_caption("Aves")
 ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
-bandada = Bandada()
-bandada.generarAves(config.numAves, velMax=config.aveVelMax)
-aves = bandada.aves
+aves = ave.generarAves(config.numAves, velMax=config.aveVelMax)
 
 duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
 ultimoTick = pygame.time.get_ticks()

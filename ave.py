@@ -1,33 +1,18 @@
 import random
-from typing import List
 import numpy as np
 import pygame
 import config
-import threading
-import time
 
 #random.seed(20)
 
-class Bandada:
-    def __init__(self):
-        self._aves: List[Ave] = None
+def generarAves( numAves, velMax=config.aveVelMax):
+    aveList = []
+    for _ in range(numAves):
+        aveList.append(Ave(pos=np.array([random.randint(0, config.mapWidth), random.randint(0, config.mapHeight)]), velMax=velMax))
+    return aveList
+        
 
-    def generarAves(self, numAves, velMax=config.aveVelMax):
-        self._aves = [
-            Ave(
-                pos=np.array([random.randint(0, config.mapWidth),
-                              random.randint(0, config.mapHeight)]),
-                bandada=self,
-                velMax=velMax
-            )
-            for _ in range(numAves) # que es esto?......
-        ]
-
-    @property
-    def aves(self):
-        return self._aves
-
-    def getvecinos(self, ave, grillaVecinos):
+def getvecinos(ave, grillaVecinos):
         listaRepulsion = []
         listaAlineamiento = []
         listaCohesion = []
@@ -44,17 +29,15 @@ class Bandada:
                         if distanciaAves < config.radioAlineamiento:
                             listaAlineamiento.append(aveV)
                         if distanciaAves < config.radioRepulsion:
-                            listaRepulsion.append(aveV)
-                        
+                            listaRepulsion.append(aveV)                     
         return [listaRepulsion,listaAlineamiento,listaCohesion]
 
 
 class Ave():
-    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax,
+    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax,
                  velocidad=20):
         self._pos = pos
         self.color = color
-        self.bandada = bandada
         self.size = size
         self.velMax = velMax
         self.velocidad = velocidad
@@ -116,9 +99,10 @@ class Ave():
 
             pygame.draw.polygon(ventana, self.color, points)
 
+
     def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
         # Obtener vecinos:
-        vecinos = self.bandada.getvecinos(self, grillaVecinos)
+        vecinos = getvecinos(self, grillaVecinos)
         # Calcular direccion de movimiento:
         vectorMov = self.calcularReglas(vecinos)
         # Actualizar campos numVecinos, vel y pos:
@@ -132,6 +116,7 @@ class Ave():
         else:
             tiempo = 1/config.tickRate
         self._pos += (self.vel * tiempo).astype(int)
+
 
     def calcularReglas(self, vecinos):
         difPosicionesV = []
@@ -168,6 +153,8 @@ class Ave():
         regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2], posPromedio=posPromedioV)
         regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
         return sum([regla1, regla2, regla3, regla4])
+
+    #==========FIN CLASE AVE===========#
 
 
 def ReglaRepulsion(ponderacion, fuerzaEmpuje, vecinos, difPosiciones, magnitudes):
@@ -216,6 +203,7 @@ def calcDistToro(P1, P2):
         distY = config.mapHeight - distY
     dist = np.linalg.norm([distX,distY])
     return dist
+
 
 def vectorDifToro(P1, P2):
     # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas

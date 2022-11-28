@@ -5,12 +5,12 @@ running = True
 tickRate = 30
 
 numAves = 100
-aveSize = 7
+aveSize = 9
 radioRepulsion = 25
-radioAlineamiento = 45
-radioCohesion = 50 # Siempre debe ser mayor o igual que los otros radios
+radioAlineamiento = 40
+radioCohesion = 40 # Siempre debe ser mayor o igual que los otros radios
 aveVelMax = 150
-fuerzaEmpuje = 10
+fuerzaEmpuje = 20
 
 colorFondo = (255, 255, 255)
 colorAves = (0,0,150)
@@ -25,6 +25,6 @@ pesoMovAleatorio = 0.6
 
 tiempoReal = False
 verGrilla = True
-verValoresGrilla = False
+verValoresGrilla = True
 verAves = True
 fontSize = 15
