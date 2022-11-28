@@ -3,8 +3,8 @@ import config
 import numpy as np
 from ave import Bandada
 
-dimXGrillaV = int(np.ceil(config.mapWidth/config.radioDeteccion))
-dimYGrillaV = int(np.ceil(config.mapHeight/config.radioDeteccion))
+dimXGrillaV = int(np.ceil(config.mapWidth/config.radioCohesion))
+dimYGrillaV = int(np.ceil(config.mapHeight/config.radioCohesion))
 
 def rellenarGrillaVecinos(aves):
     grillaVecinos = []
@@ -18,8 +18,8 @@ def rellenarGrillaVecinos(aves):
             ave.pos[0] = 0
         if ave.pos[1] == config.mapHeight:
             ave.pos[1] = 0
-        #print("Ave puesta en posicion:",int(np.floor(ave.pos[0]/config.radioDeteccion)),int(np.floor(ave.pos[1]/config.radioDeteccion)))
-        grillaVecinos[int(ave.pos[0]/config.radioDeteccion)][int(ave.pos[1]/config.radioDeteccion)].append(ave)
+        #print("Ave puesta en posicion:",int(np.floor(ave.pos[0]/config.radioCohesion)),int(np.floor(ave.pos[1]/config.radioCohesion)))
+        grillaVecinos[int(ave.pos[0]/config.radioCohesion)][int(ave.pos[1]/config.radioCohesion)].append(ave)
     return grillaVecinos
 
 pygame.init()
@@ -44,7 +44,7 @@ contador = 0
 while config.running:
     # Grilla que se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
     grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
-    # grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioDeteccion)),int(np.ceil(config.mapHeight/config.radioDeteccion))),[])
+    # grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioCohesion)),int(np.ceil(config.mapHeight/config.radioCohesion))),[])
     ventana.fill(config.colorFondo)
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
     if tiempoUltimoTick < duracionTickMs:
