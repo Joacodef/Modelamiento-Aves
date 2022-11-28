@@ -12,13 +12,12 @@ class Bandada:
     def __init__(self):
         self._aves: List[Ave] = None
 
-    def generarAves(self, numAves, radioLocal=10, velMax=10):
+    def generarAves(self, numAves, velMax=config.aveVelMax):
         self._aves = [
             Ave(
                 pos=np.array([random.randint(0, config.mapWidth),
                               random.randint(0, config.mapHeight)]),
                 bandada=self,
-                radioLocal=radioLocal,
                 velMax=velMax
             )
             for _ in range(numAves) # que es esto?......
@@ -32,26 +31,23 @@ class Bandada:
         listaVecinos = []
         posX = int(ave.pos[0]/config.radioDeteccion)
         posY = int(ave.pos[1]/config.radioDeteccion)
-        dimXGrillaV = len(grillaVecinos[0])
-        dimYGrillaV = len(grillaVecinos)
-        #print("La pos del ave actual en la grilla vecinos es:", posX, posY)
+        dimXGrillaV = len(grillaVecinos)
+        dimYGrillaV = len(grillaVecinos[0])
         for i in [(posX-1)%dimXGrillaV,posX,(posX+1)%dimXGrillaV]:
             for j in [(posY-1)%dimYGrillaV,posY,(posY+1)%dimYGrillaV]:
                 for aveV in grillaVecinos[i][j]:
                     if calcDistToro(aveV.pos, ave.pos) < config.radioDeteccion:
                         listaVecinos.append(aveV)
-        #print(listaVecinos)
         return listaVecinos
 
 
 class Ave():
-    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, size=10, radioLocal=200, velMax=30,
+    def __init__(self, bandada: Bandada, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax,
                  velocidad=20):
         self._pos = pos
         self.color = color
         self.bandada = bandada
         self.size = size
-        self.radioLocal = radioLocal
         self.velMax = velMax
         self.velocidad = velocidad
         self._vel = np.array([0, 0])
@@ -91,37 +87,34 @@ class Ave():
         self._vel = vel
 
     def draw(self, ventana):
-        if abs(self.vel).sum() == 0:
-            dir = np.array([0, 1])
-        else:
-            dir = self.vel / np.linalg.norm(self.vel)
+        if config.verAves:
+            if abs(self.vel).sum() == 0:
+                dir = np.array([0, 1])
+            else:
+                dir = self.vel / np.linalg.norm(self.vel)
 
-        dir *= self.size
-        dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] 
+            dir *= self.size
+            dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] 
 
-        centro = self.pos
+            centro = self.pos
 
-        points = [
-            0.1*dir + centro,
-            -0.75*dir + 0.8*dirPerpendicular + centro,
-            -0.75*dir - 0.8*dirPerpendicular + centro,
-        ] 
+            points = [
+                0.1*dir + centro,
+                -0.75*dir + 0.8*dirPerpendicular + centro,
+                -0.75*dir - 0.8*dirPerpendicular + centro,
+            ] 
 
-        pygame.draw.polygon(ventana, self.color, points)
+            pygame.draw.polygon(ventana, self.color, points)
 
     def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
-
-        vecinos: List[Ave] = self.bandada.getvecinos(self, grillaVecinos)
-
+        vecinos = self.bandada.getvecinos(self, grillaVecinos)
         dir = self.calcularReglas(vecinos)
+        # Actualizar campos numVecinos, vel y pos:
         self.numVecinos = len(vecinos)
-
         self.vel = self.vel + dir * self.velocidad
-
         self._pos += (self.vel * tiempoTranscurrido).astype(int)
 
     def calcularReglas(self, vecinos):
-        difPosicionV1 = np.array([])
         difPosicionesV = []
         magnitudesDistV = []
         velocidadesV = []

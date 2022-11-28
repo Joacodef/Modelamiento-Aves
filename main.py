@@ -28,7 +28,7 @@ pygame.display.set_caption("Aves")
 ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
 bandada = Bandada()
-bandada.generarAves(config.numAves, radioLocal=config.radioDeteccion, velMax=config.aveVelMax)
+bandada.generarAves(config.numAves, velMax=config.aveVelMax)
 aves = bandada.aves
 
 duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
@@ -36,6 +36,10 @@ ultimoTick = pygame.time.get_ticks()
 
 anchoCasilla = config.mapWidth/config.numDivisionesLado
 altoCasilla = config.mapHeight/config.numDivisionesLado
+
+clock = pygame.time.Clock()
+
+contador = 0
 
 while config.running:
     # Grilla que se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
@@ -55,9 +59,9 @@ while config.running:
             config.running = False
     
     grillaVecinos = rellenarGrillaVecinos(aves)
-
     for ave in aves:
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
+
         ave.actualizar(ventana, tiempoUltimoTick/1000, grillaVecinos)
         # Sumarle 1 al contador de aves de esa casilla
         grillaCampo[coordG[0],coordG[1]][0] += 1
@@ -81,6 +85,13 @@ while config.running:
                 font = pygame.font.SysFont('arial', config.fontSize)
                 text = font.render(str(grillaCampo[i][j]), True, (0, 0, 0))
                 ventana.blit(text, [j*anchoCasilla+anchoCasilla/2-30,i*altoCasilla+altoCasilla/2-15])
+
+    clock.tick(30)
+    font = pygame.font.SysFont("Arial", 18)
+    fps = str(int(clock.get_fps()))
+    fps_text = font.render(fps, 1, pygame.Color("coral"))
+    ventana.blit(fps_text,[10,10])
+
     pygame.display.flip()
 
 pygame.quit()

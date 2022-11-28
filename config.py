@@ -5,8 +5,9 @@ running = True
 tickRate = 30
 
 numAves = 200
+aveSize = 7
 factorAlejamiento = 10
-radioDeteccion = 40
+radioDeteccion = 50
 aveVelMax = 150
 
 colorFondo = (255, 255, 255)
@@ -22,4 +23,5 @@ pesoMovAleatorio = 1
 
 verGrilla = True
 verValoresGrilla = False
+verAves = True
 fontSize = 15
