@@ -9,9 +9,9 @@ aveSize = 7
 radioRepulsion = 25
 radioAlineamiento = 40
 radioCohesion = 40 # Siempre debe ser mayor o igual que los otros radios
-aveVelMax = 150
+aveRapidezMax = 150
 fuerzaEmpuje = 20
-factorVelocidad = 20
+factorRapidez = 20
 
 colorFondo = (255, 255, 255)
 colorAves = (0,0,150)
@@ -25,7 +25,7 @@ pesoCohesion = 0.5
 pesoMovAleatorio = 0.6
 
 tiempoReal = False
-verGrilla = False
-verValoresGrilla = False
+verGrilla = True
+verValoresGrilla = True
 verAves = True
 fontSize = 15

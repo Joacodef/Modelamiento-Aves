@@ -27,7 +27,7 @@ pygame.init()
 pygame.display.set_caption("Aves")
 ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
-aves = ave.generarAves(config.numAves, velMax=config.aveVelMax)
+aves = ave.generarAves(config.numAves, rapidezMax=config.aveRapidezMax)
 
 duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
 ultimoTick = pygame.time.get_ticks()

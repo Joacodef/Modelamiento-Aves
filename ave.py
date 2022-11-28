@@ -5,10 +5,10 @@ import config
 
 #random.seed(20)
 
-def generarAves( numAves, velMax=config.aveVelMax):
+def generarAves( numAves, rapidezMax=config.aveRapidezMax):
     aveList = []
     for _ in range(numAves):
-        aveList.append(Ave(pos=np.array([random.randint(0, config.mapWidth), random.randint(0, config.mapHeight)]), velMax=velMax))
+        aveList.append(Ave(pos=np.array([random.randint(0, config.mapWidth), random.randint(0, config.mapHeight)]), rapidezMax=rapidezMax))
     return aveList
         
 
@@ -34,11 +34,11 @@ def getvecinos(ave, grillaVecinos):
 
 
 class Ave():
-    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax):
+    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, rapidezMax=config.aveRapidezMax):
         self._pos = pos
         self.color = color
         self.size = size
-        self.velMax = velMax
+        self.rapidezMax = rapidezMax
         self._vel = np.array([0, 0])
         self.numVecinosRep = 0
         self.numVecinosAli = 0
@@ -73,8 +73,8 @@ class Ave():
     @vel.setter
     def vel(self, vel):
         magnitud = np.linalg.norm(vel)
-        if magnitud > self.velMax:
-            vel = vel * (self.velMax/magnitud)
+        if magnitud > self.rapidezMax:
+            vel = vel * (self.rapidezMax/magnitud)
         self._vel = vel
 
     def draw(self, ventana):
@@ -107,7 +107,7 @@ class Ave():
         self.numVecinosRep = len(vecinos[0])
         self.numVecinosAli = len(vecinos[1])
         self.numVecinosCohe = len(vecinos[2])
-        self.vel = self.vel + vectorMov * config.factorVelocidad
+        self.vel = self.vel + vectorMov * config.factorRapidez
         tiempo = 0
         if config.tiempoReal:
             tiempo = tiempoTranscurrido
