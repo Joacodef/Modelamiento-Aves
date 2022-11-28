@@ -34,13 +34,11 @@ def getvecinos(ave, grillaVecinos):
 
 
 class Ave():
-    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax,
-                 velocidad=20):
+    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, velMax=config.aveVelMax):
         self._pos = pos
         self.color = color
         self.size = size
         self.velMax = velMax
-        self.velocidad = velocidad
         self._vel = np.array([0, 0])
         self.numVecinosRep = 0
         self.numVecinosAli = 0
@@ -109,7 +107,7 @@ class Ave():
         self.numVecinosRep = len(vecinos[0])
         self.numVecinosAli = len(vecinos[1])
         self.numVecinosCohe = len(vecinos[2])
-        self.vel = self.vel + vectorMov * self.velocidad
+        self.vel = self.vel + vectorMov * config.factorVelocidad
         tiempo = 0
         if config.tiempoReal:
             tiempo = tiempoTranscurrido
@@ -152,6 +150,7 @@ class Ave():
         regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1], velocidades=np.array(velocidadesV), magnitudesV=np.array(magnitudesVelV))
         regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2], posPromedio=posPromedioV)
         regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
+        #print(regla1, regla2, regla3, regla4)
         return sum([regla1, regla2, regla3, regla4])
 
     #==========FIN CLASE AVE===========#

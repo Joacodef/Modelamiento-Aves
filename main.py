@@ -40,18 +40,19 @@ clock = pygame.time.Clock()
 contador = 0
 
 while config.running:
-    # Grilla que se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
+    # Grilla de campos se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
     grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
-    # grillaVecinos = np.full((int(np.ceil(config.mapWidth/config.radioCohesion)),int(np.ceil(config.mapHeight/config.radioCohesion))),[])
+
     ventana.fill(config.colorFondo)
+
+    # Para limitar el framerate de la simulacion:
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
     if tiempoUltimoTick < duracionTickMs:
         pygame.time.delay(duracionTickMs - tiempoUltimoTick) # Esperar a que se cumpla la duracion de un tick para pasar al siguiente
-
     tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
-
     ultimoTick = pygame.time.get_ticks()
 
+    # Para salir del juego
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             config.running = False
