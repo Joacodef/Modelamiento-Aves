@@ -26,6 +26,6 @@ pesoMovAleatorio = 0.6
 
 tiempoReal = False
 verGrilla = True
-verValoresGrilla = True
+verValoresGrilla = False
 verAves = True
 fontSize = 15

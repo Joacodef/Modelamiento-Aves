@@ -100,7 +100,7 @@ class Ave():
 
     def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
         # Obtener vecinos:
-        vecinos = getvecinos(self, grillaVecinos)
+        vecinos = getvecinos(self, grillaVecinos) # [listaRepulsion, listaAlineamiento, listaCohesion]
         # Calcular direccion de movimiento:
         vectorMov = self.calcularReglas(vecinos)
         # Actualizar campos numVecinos, vel y pos:
@@ -122,7 +122,9 @@ class Ave():
         velocidadesV = []
         magnitudesVelV = []
         posPromedioV = np.array([0,0])
-        for vecino in vecinos[2]:
+
+        # Para la repulsion
+        for vecino in vecinos[0]:
             # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual:
             difPosicionV = vectorDifToro(self.pos, vecino.pos)
             difPosicionesV.append(difPosicionV)
@@ -132,7 +134,10 @@ class Ave():
                 magnitudesDistV.append(0.0001)
             else:
                 magnitudesDistV.append(distV)
-            # Velocidades de los vecinos (componentes separadas):
+
+        # Para el alineamiento
+        for vecino in vecinos[1]:
+             # Velocidades de los vecinos (componentes separadas):
             velocidadesV.append(vecino.vel)
             # Magnitudes de las velocidades de los vecinos:
             magnitudVel = (vecino.vel[0]**2 + vecino.vel[1]**2)**0.5
@@ -140,12 +145,12 @@ class Ave():
                 magnitudesVelV.append(0.0001)
             else:
                 magnitudesVelV.append(magnitudVel)
-            # Para la posicion promedio, se debe usar el vector que apunta desde el ave actual a su vecino
-            # tomando en cuenta las condiciones de borde periodicas. Al sumar la posicion con este vector,
-            # se obtiene la posicion que tendria el vecino "fuera del plano", y asi el CdG puede estar fuera
-            # y aplicar la fuerza de manera correcta.
-            posPromedioV += np.add(self.pos,-difPosicionV)
+
+        # Para la cohesion
+        for vecino in vecinos[2]:
+            posPromedioV += np.add(self.pos,vectorDifToro(vecino.pos, self.pos))
         posPromedioV = posPromedioV/len(vecinos[2])
+
         regla1 = ReglaRepulsion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.fuerzaEmpuje, vecinos=vecinos[0], difPosiciones=np.array(difPosicionesV), magnitudes=np.array(magnitudesDistV))
         regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1], velocidades=np.array(velocidadesV), magnitudesV=np.array(magnitudesVelV))
         regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2], posPromedio=posPromedioV)
