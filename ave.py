@@ -3,7 +3,7 @@ import numpy as np
 import pygame
 import config
 
-#random.seed(20)
+random.seed(3)
 
 def generarAves( numAves, rapidezMax=config.aveRapidezMax):
     aveList = []
@@ -79,23 +79,25 @@ class Ave():
 
     def draw(self, ventana):
         if config.verAves:
-            if abs(self.vel).sum() == 0:
-                dir = np.array([0, 1])
+            if np.linalg.norm(self.vel) == 0:
+                dir = np.array([1, 0]) # Direccion por defecto en la que miran los pajaros (para no cambiar su forma cuando estan detenidos)
             else:
                 dir = self.vel / np.linalg.norm(self.vel)
-
-            dir *= self.size
-            dirPerpendicular = np.cross(np.array([*dir, 0]), np.array([0, 0, 1]))[:2] 
-
+            dir *= self.size # Vector que apunta en la direccion en la que se mueve el ave, ponderado por el tamaño especificado
+            dirPerpendicular = np.cross(np.array([dir[0], dir[1], 0]), np.array([0, 0, 1]))[:2] # Obtiene un vector perpendicular a dir
             centro = self.pos
-
             points = [
-                0.1*dir + centro,
-                -0.75*dir + 0.8*dirPerpendicular + centro,
-                -0.75*dir - 0.8*dirPerpendicular + centro,
+                 dir + centro,
+                 -dir + dirPerpendicular*2 + centro,
+                 -dir - dirPerpendicular*2 + centro,
             ] 
 
             pygame.draw.polygon(ventana, self.color, points)
+            if config.verAreas == True:
+                pygame.draw.circle(ventana, (255,   0,   0), self.pos, config.radioRepulsion, width=1)
+                pygame.draw.circle(ventana, (0,   0,   255), self.pos, config.radioAlineamiento, width=1)
+                pygame.draw.circle(ventana, (0,   255,   0), self.pos, config.radioCohesion, width=1)
+            
 
 
     def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
@@ -108,6 +110,7 @@ class Ave():
         self.numVecinosAli = len(vecinos[1])
         self.numVecinosCohe = len(vecinos[2])
         self.vel = self.vel + vectorMov * config.factorRapidez
+        #self.vel = np.array([0,0])
         tiempo = 0
         if config.tiempoReal:
             tiempo = tiempoTranscurrido
@@ -117,26 +120,48 @@ class Ave():
 
 
     def calcularReglas(self, vecinos):
-        difPosicionesV = []
-        magnitudesDistV = []
-        velocidadesV = []
-        magnitudesVelV = []
-        posPromedioV = np.array([0,0])
+        regla1 = ReglaRepulsion(ponderacion=config.pesoSeparacion, ave=self, fuerzaEmpuje=config.fuerzaEmpuje, vecinos=vecinos[0])
+        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1])
+        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2])
+        regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
+        #print("Para el ave en posicion",self.pos,"los valores de las reglas son: ",regla1, regla2, regla3, regla4)
+        return sum([regla1, regla2, regla3, regla4])
 
-        # Para la repulsion
-        for vecino in vecinos[0]:
+    #==========FIN CLASE AVE===========#
+
+
+def ReglaRepulsion(ponderacion, ave, fuerzaEmpuje, vecinos):
+    n = len(vecinos)
+    if n > 1:
+        difPosiciones = []
+        magnitudes = []
+        for vecino in vecinos:
             # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual:
-            difPosicionV = vectorDifToro(self.pos, vecino.pos)
-            difPosicionesV.append(difPosicionV)
+            difPosicionV = vectorDifToro(ave.pos, vecino.pos)
+            difPosiciones.append(difPosicionV)
             # Distancias a cada vecino:
-            distV = self.calcDistancia(vecino)
+            distV = ave.calcDistancia(vecino)
             if distV == 0:
-                magnitudesDistV.append(0.0001)
+                magnitudes.append(0.0001)
             else:
-                magnitudesDistV.append(distV)
+                magnitudes.append(distV)
+        difPosiciones = np.array(difPosiciones)
+        magnitudes = np.array(magnitudes)
+        # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
+        dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
+        # Obtener la suma de los vectores, de manera que los que esten mas cerca pesen mas, y se ponderan ademas por una fuerza de empuje
+        vel = np.sum(dirNormalizadas * (fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
+    else:
+        vel = np.array([0, 0])
+    return vel * ponderacion
 
-        # Para el alineamiento
-        for vecino in vecinos[1]:
+
+def ReglaAlineamiento(ponderacion, vecinos):
+    velocidadesV = []
+    magnitudesVelV = []
+    if len(vecinos)< 1:
+        return np.array([0,0])
+    for vecino in vecinos:
              # Velocidades de los vecinos (componentes separadas):
             velocidadesV.append(vecino.vel)
             # Magnitudes de las velocidades de los vecinos:
@@ -145,48 +170,23 @@ class Ave():
                 magnitudesVelV.append(0.0001)
             else:
                 magnitudesVelV.append(magnitudVel)
-
-        # Para la cohesion
-        for vecino in vecinos[2]:
-            posPromedioV += np.add(self.pos,vectorDifToro(vecino.pos, self.pos))
-        posPromedioV = posPromedioV/len(vecinos[2])
-
-        regla1 = ReglaRepulsion(ponderacion=config.pesoSeparacion, fuerzaEmpuje=config.fuerzaEmpuje, vecinos=vecinos[0], difPosiciones=np.array(difPosicionesV), magnitudes=np.array(magnitudesDistV))
-        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1], velocidades=np.array(velocidadesV), magnitudesV=np.array(magnitudesVelV))
-        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2], posPromedio=posPromedioV)
-        regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
-        #print(regla1, regla2, regla3, regla4)
-        return sum([regla1, regla2, regla3, regla4])
-
-    #==========FIN CLASE AVE===========#
-
-
-def ReglaRepulsion(ponderacion, fuerzaEmpuje, vecinos, difPosiciones, magnitudes):
-    n = len(vecinos)
-    if n > 1:
-        # Obtener vectores unitarios que apuntan en la direccion contraria a cada vecino
-        dirNormalizadas = difPosiciones / magnitudes[:, np.newaxis] # Trasponer el vector de magnitudes (para que quede como vector columna)
-        # Obtener un vector
-        vel = np.sum(dirNormalizadas * (fuerzaEmpuje/magnitudes)[:, np.newaxis], axis=0)
-    else:
-        vel = np.array([0, 0])
-    return vel * ponderacion
-
-
-def ReglaAlineamiento(ponderacion, vecinos, velocidades, magnitudesV):
-    if len(vecinos)< 1:
-        return np.array([0,0])
+    velocidadesV = np.array(velocidadesV)
+    magnitudesVelV = np.array(magnitudesVelV)
     # Obtener vectores de velocidad normalizados
-    velNormalizadas: np.ndarray = velocidades / magnitudesV[:, np.newaxis]
+    velNormalizadas: np.ndarray = velocidadesV / magnitudesVelV[:, np.newaxis]
     # Promedio de las direcciones de las aves cercanas, sin contar su magnitud, solo su direccion
     vel: np.ndarray = velNormalizadas.mean(axis=0)
     return vel * ponderacion
 
 
-def ReglaCohesion(ponderacion, ave, vecinos, posPromedio):
+def ReglaCohesion(ponderacion, ave, vecinos):
+    posPromedioV = np.array([0,0])
     if len(vecinos) == 0:
         return np.array([0, 0])
-    diff = vectorDifToro(posPromedio, ave.pos) # vector que apunta desde el ave al centro de gravedad
+    for vecino in vecinos:
+        posPromedioV += np.add(ave.pos,vectorDifToro(vecino.pos, ave.pos))
+    posPromedioV = posPromedioV/len(vecinos)
+    diff = vectorDifToro(posPromedioV, ave.pos) # vector que apunta desde el ave al centro de gravedad
     mag = np.linalg.norm(diff)
     if mag == 0:
         return np.array([0, 0])

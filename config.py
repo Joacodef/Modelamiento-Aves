@@ -5,10 +5,10 @@ running = True
 tickRate = 30
 
 numAves = 100
-aveSize = 7
+aveSize = 3
 radioRepulsion = 25
 radioAlineamiento = 40
-radioCohesion = 40 # Siempre debe ser mayor o igual que los otros radios
+radioCohesion = 45 # Siempre debe ser mayor o igual que los otros radios
 aveRapidezMax = 150
 fuerzaEmpuje = 20
 factorRapidez = 20
@@ -22,10 +22,11 @@ numDivisionesLado = 5
 pesoSeparacion = 1
 pesoAlineamiento = 0.7
 pesoCohesion = 0.5
-pesoMovAleatorio = 0.6
+pesoMovAleatorio = 0.1
 
 tiempoReal = False
 verGrilla = True
 verValoresGrilla = False
 verAves = True
+verAreas = False
 fontSize = 15
