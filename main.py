@@ -69,11 +69,11 @@ while config.running:
             pygame.draw.line(ventana, config.colorLinea, (i * config.mapWidth/config.numDivisionesLado,0), (i * config.mapWidth/config.numDivisionesLado, config.mapHeight))
             pygame.draw.line(ventana, config.colorLinea, (0,i * config.mapHeight/config.numDivisionesLado), (config.mapWidth, i * config.mapHeight/config.numDivisionesLado))
 
-    #if config.verGrillaVecinos:
-    for i in range(1,dimYGrillaV):
-        pygame.draw.line(ventana, config.colorLinea, (i * config.radioCohesion,0), (i * config.radioCohesion, config.mapHeight))
-    for j in range(1,dimXGrillaV):
-        pygame.draw.line(ventana, config.colorLinea, (0,j * config.radioCohesion), (config.mapWidth, j * config.radioCohesion))
+    if config.verGrillaVecinos:
+        for i in range(1,dimYGrillaV):
+            pygame.draw.line(ventana, config.colorLinea, (i * config.radioCohesion,0), (i * config.radioCohesion, config.mapHeight))
+        for j in range(1,dimXGrillaV):
+            pygame.draw.line(ventana, config.colorLinea, (0,j * config.radioCohesion), (config.mapWidth, j * config.radioCohesion))
 
     # Mostrar Numeros de la grilla y sacar promedio de velocidades
     for i in range(0,config.numDivisionesLado):    
@@ -88,9 +88,9 @@ while config.running:
 
     clock.tick(30)
     font = pygame.font.SysFont("Arial", 18)
-    # fps = str(clock.get_fps())
-    # fps_text = font.render(fps, 1, pygame.Color("coral"))
-    # ventana.blit(fps_text,[10,10])
+    fps = str(int(clock.get_fps()))
+    fps_text = font.render(fps, 1, pygame.Color("coral"))
+    ventana.blit(fps_text,[10,10])
 
     pygame.display.flip()
 

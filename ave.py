@@ -117,8 +117,16 @@ def ReglaSeparacion(ponderacion, ave,  vecinos):
     if len(vecinos) < 1:
         return
     else:
-        difPosiciones = np.array([vectorDifToro(ave.pos, vecino.pos) for vecino in vecinos])
-        vel = np.sum(difPosiciones, axis=0) # Se suman los vectores de diferencia 
+        difPosiciones = []
+        for vecino in vecinos:
+            dif = vectorDifToro(ave.pos, vecino.pos)
+            mag = np.linalg.norm(dif)
+            while mag == 0:
+                dif = np.random.uniform(-1, 1, 2)
+                mag = np.linalg.norm(dif)
+            magInversa = config.radioSeparacion/mag # magnitud que se hace mas fuerte mientras mas cerca se este al ave
+            difPosiciones.append(dif*magInversa)
+        vel = np.sum(np.array(difPosiciones), axis=0) # Se suman los vectores de diferencia 
         ave.vel = ave.vel + vel * ponderacion
 
 
