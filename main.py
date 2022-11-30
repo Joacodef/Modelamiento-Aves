@@ -30,9 +30,6 @@ ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
 aves = ave.generarAves(config.numAves, rapidezMax=config.aveRapidezMax)
 
-duracionTickMs = int(1000/config.tickRate) # Convertir a milisegundos
-ultimoTick = pygame.time.get_ticks()
-
 anchoCasilla = config.mapWidth/config.numDivisionesLado
 altoCasilla = config.mapHeight/config.numDivisionesLado
 
@@ -46,13 +43,6 @@ while config.running:
 
     ventana.fill(config.colorFondo)
 
-    # Para limitar el framerate de la simulacion:
-    tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
-    if tiempoUltimoTick < duracionTickMs:
-        pygame.time.delay(duracionTickMs - tiempoUltimoTick) # Esperar a que se cumpla la duracion de un tick para pasar al siguiente
-    tiempoUltimoTick = pygame.time.get_ticks() - ultimoTick
-    ultimoTick = pygame.time.get_ticks()
-
     # Para salir del juego
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
@@ -61,7 +51,7 @@ while config.running:
     grillaVecinos = rellenarGrillaVecinos(aves)
     for ave in aves:
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
-        ave.actualizar(ventana, tiempoUltimoTick/1000, grillaVecinos)
+        ave.actualizar(ventana, grillaVecinos)
         # Sumarle 1 al contador de aves de esa casilla
         grillaCampo[coordG[0],coordG[1]][0] += 1
         # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)

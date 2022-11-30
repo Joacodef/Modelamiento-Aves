@@ -23,7 +23,6 @@ pesoAlineamiento = 1
 pesoCohesion = 1
 pesoMovAleatorio = 0
 
-tiempoReal = False
 verGrillaCampos = False
 verValoresGrillaCampos = False
 verAves = True

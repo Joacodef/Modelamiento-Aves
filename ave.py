@@ -59,8 +59,8 @@ class Ave():
         if self.pos[1] < 0:
             self.pos[1]=config.mapHeight + self.pos[1]
 
-    def actualizar(self, ventana, tiempoTranscurrido, grillaVecinos):
-        self.actualizarVelPos(tiempoTranscurrido, grillaVecinos)
+    def actualizar(self, ventana, grillaVecinos):
+        self.actualizarVelPos(grillaVecinos)
         self.bordePeriodico()
         self.draw(ventana)
 
@@ -96,18 +96,14 @@ class Ave():
                 pygame.draw.circle(ventana, (0,   0,   255), self.pos, config.radioAlineamiento, width=1)
                 pygame.draw.circle(ventana, (0,   255,   0), self.pos, config.radioCohesion, width=1)
             
-    def actualizarVelPos(self, tiempoTranscurrido, grillaVecinos):
+    def actualizarVelPos(self, grillaVecinos):
         # Obtener vecinos:
         vecinos = getvecinos(self, grillaVecinos) # [listaRepulsion, listaAlineamiento, listaCohesion]
         # Calcular direccion de movimiento:
         vectorMov = self.calcularReglas(vecinos)
         self.vel = self.vel + vectorMov * config.factorRapidez
         #self.vel = np.array([0,0])
-        tiempo = 0
-        if config.tiempoReal:
-            tiempo = tiempoTranscurrido
-        else:
-            tiempo = 1/config.tickRate
+        tiempo = 1/config.tickRate
         self.pos += (self.vel * tiempo).astype(int)
 
     def calcularReglas(self, vecinos):
@@ -115,7 +111,6 @@ class Ave():
         regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1])
         regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2])
         regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
-        #print("Para el ave en posicion",self.pos,"los valores de las reglas son: ",regla1, regla2, regla3, regla4)
         return sum([regla1, regla2, regla3, regla4])
 
     #==========FIN CLASE AVE===========#
