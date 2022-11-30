@@ -39,6 +39,7 @@ contador = 0
 
 while config.running:
     # Grilla de campos se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
+    contador += 1
     grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
 
     ventana.fill(config.colorFondo)
@@ -48,10 +49,13 @@ while config.running:
         if evento.type == pygame.QUIT:
             config.running = False
     
+    if contador == config.numTicks: # Equivalente a 1 minuto si corre a 30 fps
+        config.running = False
+
     grillaVecinos = rellenarGrillaVecinos(aves)
     for ave in aves:
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
-        ave.actualizar(ventana, grillaVecinos)
+        ave.actualizar(ventana, grillaVecinos, clock.get_fps())
         # Sumarle 1 al contador de aves de esa casilla
         grillaCampo[coordG[0],coordG[1]][0] += 1
         # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)
@@ -84,9 +88,9 @@ while config.running:
 
     clock.tick(30)
     font = pygame.font.SysFont("Arial", 18)
-    fps = str(int(clock.get_fps()))
-    fps_text = font.render(fps, 1, pygame.Color("coral"))
-    ventana.blit(fps_text,[10,10])
+    # fps = str(clock.get_fps())
+    # fps_text = font.render(fps, 1, pygame.Color("coral"))
+    # ventana.blit(fps_text,[10,10])
 
     pygame.display.flip()
 
