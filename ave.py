@@ -12,7 +12,6 @@ def generarAves( numAves, rapidezMax=config.aveRapidezMax):
     return aveList
         
 
-
 def getvecinos(ave, grillaVecinos):
         listaRepulsion = []
         listaAlineamiento = []
@@ -38,7 +37,6 @@ def getvecinos(ave, grillaVecinos):
                         else:
                             listaCohesion.append(aveV)                                
         return [listaRepulsion,listaAlineamiento,listaCohesion]
-
 
 
 class Ave():
@@ -99,26 +97,25 @@ class Ave():
     def actualizarVelPos(self, grillaVecinos):
         # Obtener vecinos:
         vecinos = getvecinos(self, grillaVecinos) # [listaRepulsion, listaAlineamiento, listaCohesion]
-        # Calcular direccion de movimiento:
-        vectorMov = self.calcularReglas(vecinos)
-        self.vel = self.vel + vectorMov * config.factorRapidez
+        # Modificar velocidad del ave segun las reglas:
+        self.calcularReglas(vecinos)
         #self.vel = np.array([0,0])
         tiempo = 1/config.tickRate
         self.pos += (self.vel * tiempo).astype(int)
 
     def calcularReglas(self, vecinos):
-        regla1 = ReglaRepulsion(ponderacion=config.pesoSeparacion, ave=self, vecinos=vecinos[0])
-        regla2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, vecinos=vecinos[1])
-        regla3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave = self, vecinos=vecinos[2])
-        regla4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
-        return sum([regla1, regla2, regla3, regla4])
+        ReglaRepulsion(ponderacion=config.pesoSeparacion, ave=self, vecinos=vecinos[0])
+        ReglaAlineamiento(ponderacion=config.pesoAlineamiento, ave=self, vecinos=vecinos[1])
+        ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos[2])
+        MovAleatorio(ponderacion=config.pesoMovAleatorio, ave=self)
 
     #==========FIN CLASE AVE===========#
 
 
 def ReglaRepulsion(ponderacion, ave,  vecinos):
-    n = len(vecinos)
-    if n > 1:
+    if len(vecinos) < 1:
+        return
+    else:
         difPosicionesNorm = []
         for vecino in vecinos:
             # Vectores de diferencia apuntan en la dirección contraria a cada vecino, desde la perspectiva del ave actual:
@@ -127,15 +124,14 @@ def ReglaRepulsion(ponderacion, ave,  vecinos):
                 difPosicionesNorm.append(difPosicionVec/np.linalg.norm(difPosicionVec)) # Se normalizan los vectores de diferencia
         difPosicionesNorm = np.array(difPosicionesNorm)
         vel = np.sum(difPosicionesNorm, axis=0) # Se suman los vectores de diferencia normalizados
-    else:
-        vel = np.array([0, 0])
-    return vel * ponderacion
+        ave.vel = ave.vel + vel * config.factorRapidez * ponderacion
 
-def ReglaAlineamiento(ponderacion, vecinos):
-    velocidadesNormal = []
+
+def ReglaAlineamiento(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
-        return np.array([0,0])
+        return
     else:
+        velocidadesNormal = []
         for vecino in vecinos:
             # Velocidades de los vecinos normalizadas:
             if np.max(vecino.vel) != 0:
@@ -144,23 +140,29 @@ def ReglaAlineamiento(ponderacion, vecinos):
                 velocidadesNormal.append(np.array([0,0]))
         velocidadesNormal = np.array(velocidadesNormal)
         vel = velocidadesNormal.mean(axis=0) # Se promedian los vectores de velocidad normalizados
-        return vel * ponderacion
+        ave.vel = ave.vel + vel * config.factorRapidez * ponderacion
 
-def ReglaCohesion(ponderacion, ave, vecinos):
-    posPromedioV = np.array([0,0])
-    if len(vecinos) == 0:
-        return np.array([0, 0])
-    for vecino in vecinos:
-        posPromedioV += np.add(ave.pos,vectorDifToro(vecino.pos, ave.pos)) # Posicion promedio de los vecinos
-    posPromedioV = posPromedioV/len(vecinos)
-    diff = vectorDifToro(posPromedioV, ave.pos) # Vector que apunta desde el ave a la posicion promedio de los vecinos
-    mag = np.linalg.norm(diff)
-    if mag == 0:
-        return np.array([0, 0])
-    return ponderacion * diff / mag # Vector unitario que apunta a la pos promedio de los vecinos
 
-def MovAleatorio(ponderacion):
-    return np.random.uniform(-1, 1, 2)*ponderacion
+def ReglaCohesion(ponderacion, ave, vecinos):   
+    if len(vecinos) < 1:
+        return
+    else:
+        posPromedioV = np.array([0,0])
+        for vecino in vecinos:
+            posPromedioV += np.add(ave.pos,vectorDifToro(vecino.pos, ave.pos)) # Posicion promedio de los vecinos
+        posPromedioV = posPromedioV/len(vecinos)
+        diff = vectorDifToro(posPromedioV, ave.pos) # Vector que apunta desde el ave a la posicion promedio de los vecinos
+        mag = np.linalg.norm(diff)
+        if mag == 0:
+            return
+        vel = ponderacion * diff / mag # Vector unitario que apunta a la pos promedio de los vecinos
+        ave.vel = ave.vel + vel * config.factorRapidez * ponderacion
+
+
+def MovAleatorio(ponderacion, ave):
+    vel = np.random.uniform(-1, 1, 2)*ponderacion
+    ave.vel = ave.vel + vel * config.factorRapidez * ponderacion
+
 
 def vectorDifToro(P1, P2):
     # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas
