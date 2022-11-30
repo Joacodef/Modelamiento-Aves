@@ -19,8 +19,8 @@ colorLinea = (100,0,0)
 numDivisionesLado = 5
 
 pesoSeparacion = 1
-pesoAlineamiento = 0.7
-pesoCohesion = 0.5
+pesoAlineamiento = 1
+pesoCohesion = 1
 pesoMovAleatorio = 0
 
 tiempoReal = False
