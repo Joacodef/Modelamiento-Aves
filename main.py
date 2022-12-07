@@ -5,6 +5,7 @@ import ave
 
 dimXGrillaV = int(config.mapWidth/config.radioCohesion)
 dimYGrillaV = int(config.mapHeight/config.radioCohesion)
+file = open("registro.txt", 'w')
 
 def rellenarGrillaVecinos(aves):
     grillaVecinos = []
@@ -81,11 +82,12 @@ while config.running:
             if grillaCampo[i][j][0] != 0:
                     grillaCampo[i][j][1] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad horizontal (vel[0]/numAvesEnCasilla) 
                     grillaCampo[i][j][2] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad vertical
+            file.write(str(i)+","+str(j)+","+str(grillaCampo[i][j][0])+","+str(grillaCampo[i][j][1])+","+str(grillaCampo[i][j][2])+";")
             if config.verValoresGrillaCampos:
                 font = pygame.font.SysFont('arial', config.fontSize)
                 text = font.render(str(grillaCampo[i][j]), True, (0, 0, 0))
                 ventana.blit(text, [j*anchoCasilla+anchoCasilla/2-30,i*altoCasilla+altoCasilla/2-15])
-
+    file.write("\n")
     clock.tick(30)
     font = pygame.font.SysFont("Arial", 18)
     fps = str(int(clock.get_fps()))
@@ -95,5 +97,6 @@ while config.running:
     pygame.display.flip()
 
 pygame.quit()
+file.close()
 
 

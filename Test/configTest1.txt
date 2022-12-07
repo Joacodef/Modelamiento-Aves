@@ -1,5 +1,5 @@
-mapWidth = 600
-mapHeight = 600
+mapWidth = 700
+mapHeight = 700
 
 running = True
 tickRate = 30
@@ -9,9 +9,9 @@ numAves = 1000
 aveSize = 2
 aveRapidezMax = 150
 # Los radios deben cumplir: radioSeparacion <= radioAlineamiento <= radioCohesion
-radioSeparacion = 30
-radioAlineamiento = 40
-radioCohesion = 50
+radioSeparacion = 20
+radioAlineamiento = 35
+radioCohesion = 40
 
 numDivisionesLado = 5
 
