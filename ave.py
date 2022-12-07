@@ -5,11 +5,10 @@ import config
 
 #random.seed(3)
 
-def generarAves( numAves, rapidezMax=config.aveRapidezMax):
+def generarAves(numAves):
     aveList = []
-    for i in range(numAves):
-        aveList.append(Ave(pos=np.array([random.randint(0, config.mapWidth), random.randint(0, config.mapHeight)]), rapidezMax=rapidezMax))
-        aveList[i].vel=np.random.uniform(-150, 150, 2)
+    for _ in range(numAves):
+        aveList.append(Ave(pos=np.array([random.uniform(0.0, config.mapWidth), random.uniform(0.0, config.mapHeight)])))
     return aveList
         
 
@@ -41,12 +40,9 @@ def getvecinos(ave, grillaVecinos):
 
 
 class Ave():
-    def __init__(self, pos=np.array([0, 0]), color=config.colorAves, size=config.aveSize, rapidezMax=config.aveRapidezMax):
+    def __init__(self, pos=np.array([0.0, 0.0])):
         self.pos = pos
-        self.color = color
-        self.size = size
-        self.rapidezMax = rapidezMax
-        self._vel = np.array([0, 0])
+        self.vel = np.array([0.0, 0.0])
 
     def actualizar(self, ventana, grillaVecinos, tiempo):
         self.actualizarVelPos(grillaVecinos, tiempo)
@@ -55,24 +51,13 @@ class Ave():
 
     def bordePeriodico(self):
         if self.pos[0] > config.mapWidth:
-            self.pos[0]=0
+            self.pos[0]=0.0
         if self.pos[0] < 0:
             self.pos[0]=config.mapWidth + self.pos[0]
         if self.pos[1] > config.mapHeight:
-            self.pos[1]=0
+            self.pos[1]=0.0
         if self.pos[1] < 0:
             self.pos[1]=config.mapHeight + self.pos[1]
-
-    @property
-    def vel(self):
-        return self._vel
-
-    @vel.setter
-    def vel(self, vel):
-        magnitud = np.linalg.norm(vel)
-        if magnitud > self.rapidezMax:
-            vel = vel * (self.rapidezMax/magnitud)
-        self._vel = vel
 
     def draw(self, ventana):
         if config.verAves:
@@ -80,20 +65,20 @@ class Ave():
                 dir = np.array([1, 0]) # Direccion por defecto en la que miran los pajaros (para no cambiar su forma cuando estan detenidos)
             else:
                 dir = self.vel / np.linalg.norm(self.vel)
-            dir *= self.size # Vector que apunta en la direccion en la que se mueve el ave, ponderado por el tamaño especificado
+            dir *= config.aveSize # Vector que apunta en la direccion en la que se mueve el ave, ponderado por el tamaño especificado
             dirPerpendicular = np.cross(np.array([dir[0], dir[1], 0]), np.array([0, 0, 1]))[:2] # Obtiene un vector perpendicular a dir
-            centro = self.pos
+            centro = self.pos.astype(int)
             points = [
                  dir + centro,
                  -dir + dirPerpendicular*2 + centro,
                  -dir - dirPerpendicular*2 + centro,
             ] 
 
-            pygame.draw.polygon(ventana, self.color, points)
+            pygame.draw.polygon(ventana, config.colorAves, points)
             if config.verAreas == True:
-                pygame.draw.circle(ventana, (255,   0,   0), self.pos, config.radioSeparacion, width=1)
-                pygame.draw.circle(ventana, (0,   0,   255), self.pos, config.radioAlineamiento, width=1)
-                pygame.draw.circle(ventana, (0,   255,   0), self.pos, config.radioCohesion, width=1)
+                pygame.draw.circle(ventana, (255,   0,   0), self.pos.astype(int), config.radioSeparacion, width=1)
+                pygame.draw.circle(ventana, (0,   0,   255), self.pos.astype(int), config.radioAlineamiento, width=1)
+                pygame.draw.circle(ventana, (0,   255,   0), self.pos.astype(int), config.radioCohesion, width=1)
             
     def actualizarVelPos(self, grillaVecinos, tiempo):
         # Obtener vecinos:
@@ -102,20 +87,36 @@ class Ave():
         self.calcularReglas(vecinos)
         if tiempo == 0:
             tiempo = 0.01
-        self.pos += (self.vel * 1/config.tickRate).astype(int)
+        self.pos += self.vel
 
     def calcularReglas(self, vecinos):
-        ReglaSeparacion(ponderacion=config.pesoSeparacion, ave=self, vecinos=vecinos[0])
-        ReglaAlineamiento(ponderacion=config.pesoAlineamiento, ave=self, vecinos=vecinos[1])
-        ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos[2])
-        MovAleatorio(ponderacion=config.pesoMovAleatorio, ave=self)
+        r1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, ave=self, vecinos=vecinos[0])
+        r2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, ave=self, vecinos=vecinos[1])
+        r3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos[2])
+        r4 = MovAleatorio(ponderacion=config.pesoMovAleatorio, ave=self)
+        nuevaVel = r1+r2+r3+r4
+        diff = self.vel - nuevaVel
+        maxCambio = config.maxCambioVel
+        if diff[0] > maxCambio:
+            self.vel[0] -= maxCambio
+        elif diff[0] < -maxCambio:
+            self.vel[0] += maxCambio
+        else:
+            self.vel[0] = nuevaVel[0]
+        if diff[1] > maxCambio:
+            self.vel[1] -= maxCambio
+        elif diff[1] < -maxCambio:
+            self.vel[1] += maxCambio
+        else:
+            self.vel[1] = nuevaVel[1]
+
 
     #==========FIN CLASE AVE===========#
 
 
 def ReglaSeparacion(ponderacion, ave,  vecinos):
     if len(vecinos) < 1:
-        return
+        return np.array([0,0])
     else:
         difPosiciones = []
         for vecino in vecinos:
@@ -127,32 +128,32 @@ def ReglaSeparacion(ponderacion, ave,  vecinos):
             magInversa = config.radioSeparacion/mag # magnitud que se hace mas fuerte mientras mas cerca se este al ave
             difPosiciones.append(dif*magInversa)
         vel = np.sum(np.array(difPosiciones), axis=0) # Se suman los vectores de diferencia 
-        ave.vel = ave.vel + vel * ponderacion
+        return vel * ponderacion
 
 
 def ReglaAlineamiento(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
-        return
+        return np.array([0.0,0.0])
     else:
         velocidades = np.array([vecino.vel for vecino in vecinos])
         vel = velocidades.mean(axis=0) # Se promedian los vectores de velocidad normalizados
-        ave.vel = ave.vel + (vel - ave.vel) * ponderacion
+        return vel * ponderacion
 
 
 def ReglaCohesion(ponderacion, ave, vecinos):   
     if len(vecinos) < 1:
-        return
+        return np.array([0.0,0.0])
     else:
-        posPromedioV = np.array([0,0])
+        posPromedioV = np.array([0.0,0.0])
         for vecino in vecinos:
             posPromedioV += np.add(ave.pos,vectorDifToro(vecino.pos, ave.pos)) # Sumar las posiciones de los vecinos (considerando cond borde periodicas)
-        posPromedioV = posPromedioV/len(vecinos) # Posicion promedio de los vecinos
-        ave.vel = ave.vel + vectorDifToro(posPromedioV, ave.pos) * ponderacion # Sumar a la vel actual el vector desde su posicion al centro de G (ponderado)
+        vel = posPromedioV/len(vecinos) # Posicion promedio de los vecinos
+        return vel * ponderacion
 
 
 def MovAleatorio(ponderacion, ave):
     vel = np.random.uniform(-10, 10, 2)*ponderacion
-    ave.vel = ave.vel + vel * ponderacion
+    return vel * ponderacion
 
 
 def vectorDifToro(P1, P2):

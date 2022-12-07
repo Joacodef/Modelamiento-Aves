@@ -29,7 +29,7 @@ pygame.init()
 pygame.display.set_caption("Aves")
 ventana = pygame.display.set_mode((config.mapWidth, config.mapHeight))
 
-aves = ave.generarAves(config.numAves, rapidezMax=config.aveRapidezMax)
+aves = ave.generarAves(config.numAves)
 
 anchoCasilla = config.mapWidth/config.numDivisionesLado
 altoCasilla = config.mapHeight/config.numDivisionesLado
