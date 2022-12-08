@@ -1,22 +1,21 @@
-mapWidth = 200
-mapHeight = 200
+mapWidth = 500
+mapHeight = 500
 
 running = True
-numTicks = 0
 
-maxCambioVel = 10
-numAves = 5
+maxRapidez = 0.5
+numAves = 100
 aveSize = 3
 # Los radios deben cumplir: radioSeparacion <= radioAlineamiento <= radioCohesion
 radioSeparacion = 30
-radioAlineamiento = 40
-radioCohesion = 60
+radioAlineamiento = 45
+radioCohesion = 50
 
 numDivisionesLado = 5
 
-pesoSeparacion = 0.05
-pesoAlineamiento = 0.2
-pesoCohesion = 0.02
+pesoSeparacion = 1
+pesoAlineamiento = 1
+pesoCohesion = 1
 pesoMovAleatorio = 0
 
 colorFondo = (255, 255, 255)
@@ -25,7 +24,7 @@ colorLinea = (100,0,0)
 
 verGrillaCampos = True
 verValoresGrillaCampos = False
-verGrillaVecinos = False
+verGrillaVecinos = True
 verAves = True
 verAreas = False
 fontSize = 15

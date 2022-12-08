@@ -3,7 +3,7 @@ import numpy as np
 import pygame
 import config
 
-#random.seed(3)
+random.seed(3)
 
 def generarAves(numAves):
     aveList = []
@@ -28,6 +28,8 @@ def getvecinos(ave, grillaVecinos):
             for j in [(posX-1)%dimXGrillaV,posX,(posX+1)%dimXGrillaV]:
                 for aveV in grillaVecinos[i][j]:
                     distanciaAves = np.linalg.norm(vectorDifToro(aveV.pos, ave.pos))
+                    if distanciaAves == 0.0:
+                        continue
                     if  distanciaAves < config.radioCohesion:
                         if distanciaAves < config.radioAlineamiento:
                             if distanciaAves < config.radioSeparacion:
@@ -44,20 +46,23 @@ class Ave():
         self.pos = pos
         self.vel = np.array([0.0, 0.0])
 
-    def actualizar(self, ventana, grillaVecinos, tiempo):
-        self.actualizarVelPos(grillaVecinos, tiempo)
+    def actualizar(self, ventana, grillaVecinos):
+        # Obtener vecinos:
+        vecinos = getvecinos(self, grillaVecinos) # [listaSeparacion, listaAlineamiento, listaCohesion]
+        deltaV = self.calcularReglas(vecinos)
+        self.vel += deltaV
+        rapi = np.linalg.norm(self.vel) 
+        if rapi > config.maxRapidez:
+            self.vel = config.maxRapidez*self.vel/rapi
+        self.pos += self.vel
         self.bordePeriodico()
+        #print("Num Vecinos del ave en:",self.pos," = ",len(vecinos[0])+len(vecinos[1])+len(vecinos[2]))
+        #print("Los Vecinos son:",[vecino.pos for vecino in vecinos[0]],[vecino.pos for vecino in vecinos[1]],[vecino.pos for vecino in vecinos[2]])
         self.draw(ventana)
 
     def bordePeriodico(self):
-        if self.pos[0] > config.mapWidth:
-            self.pos[0]=0.0
-        if self.pos[0] < 0:
-            self.pos[0]=config.mapWidth + self.pos[0]
-        if self.pos[1] > config.mapHeight:
-            self.pos[1]=0.0
-        if self.pos[1] < 0:
-            self.pos[1]=config.mapHeight + self.pos[1]
+        self.pos[0] = self.pos[0]%config.mapWidth
+        self.pos[1] = self.pos[1]%config.mapHeight
 
     def draw(self, ventana):
         if config.verAves:
@@ -80,41 +85,19 @@ class Ave():
                 pygame.draw.circle(ventana, (0,   0,   255), self.pos.astype(int), config.radioAlineamiento, width=1)
                 pygame.draw.circle(ventana, (0,   255,   0), self.pos.astype(int), config.radioCohesion, width=1)
             
-    def actualizarVelPos(self, grillaVecinos, tiempo):
-        # Obtener vecinos:
-        vecinos = getvecinos(self, grillaVecinos) # [listaSeparacion, listaAlineamiento, listaCohesion]
-        # Modificar velocidad del ave segun las reglas:
-        self.calcularReglas(vecinos)
-        if tiempo == 0:
-            tiempo = 0.01
-        self.pos += self.vel
-
     def calcularReglas(self, vecinos):
         r1 = ReglaSeparacion(ponderacion=config.pesoSeparacion, ave=self, vecinos=vecinos[0])
         r2 = ReglaAlineamiento(ponderacion=config.pesoAlineamiento, ave=self, vecinos=vecinos[1])
         r3 = ReglaCohesion(ponderacion=config.pesoCohesion, ave=self, vecinos=vecinos[2])
-        r4 = MovAleatorio(ponderacion=config.pesoMovAleatorio, ave=self)
-        nuevaVel = r1+r2+r3+r4
-        diff = self.vel - nuevaVel
-        maxCambio = config.maxCambioVel
-        if diff[0] > maxCambio:
-            self.vel[0] -= maxCambio
-        elif diff[0] < -maxCambio:
-            self.vel[0] += maxCambio
-        else:
-            self.vel[0] = nuevaVel[0]
-        if diff[1] > maxCambio:
-            self.vel[1] -= maxCambio
-        elif diff[1] < -maxCambio:
-            self.vel[1] += maxCambio
-        else:
-            self.vel[1] = nuevaVel[1]
+        r4 = MovAleatorio(ponderacion=config.pesoMovAleatorio)
+        deltaV = r1+r2+r3+r4
+        return deltaV
 
 
     #==========FIN CLASE AVE===========#
 
 
-def ReglaSeparacion(ponderacion, ave,  vecinos):
+def ReglaSeparacion(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
         return np.array([0,0])
     else:
@@ -135,8 +118,11 @@ def ReglaAlineamiento(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
         return np.array([0.0,0.0])
     else:
-        velocidades = np.array([vecino.vel for vecino in vecinos])
-        vel = velocidades.mean(axis=0) # Se promedian los vectores de velocidad normalizados
+        velocidades = []
+        for vecino in vecinos:
+            velocidades.append(vecino.vel-ave.vel)
+        velocidades = np.array(velocidades)
+        vel = velocidades.mean(axis=0)
         return vel * ponderacion
 
 
@@ -151,7 +137,7 @@ def ReglaCohesion(ponderacion, ave, vecinos):
         return vel * ponderacion
 
 
-def MovAleatorio(ponderacion, ave):
+def MovAleatorio(ponderacion):
     vel = np.random.uniform(-10, 10, 2)*ponderacion
     return vel * ponderacion
 
