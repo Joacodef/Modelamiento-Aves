@@ -3,7 +3,7 @@ import numpy as np
 import pygame
 import config
 
-random.seed(3)
+#random.seed(3)
 
 def generarAves(numAves):
     aveList = []
@@ -47,17 +47,15 @@ class Ave():
         self.vel = np.array([0.0, 0.0])
 
     def actualizar(self, ventana, grillaVecinos):
-        # Obtener vecinos:
         vecinos = getvecinos(self, grillaVecinos) # [listaSeparacion, listaAlineamiento, listaCohesion]
-        deltaV = self.calcularReglas(vecinos)
-        self.vel += deltaV
+        acel = self.calcularReglas(vecinos)
+        self.vel += (acel - config.airDragCoeff*self.vel) 
+        """
         rapi = np.linalg.norm(self.vel) 
         if rapi > config.maxRapidez:
-            self.vel = config.maxRapidez*self.vel/rapi
+            self.vel = config.maxRapidez*self.vel/rapi"""
         self.pos += self.vel
         self.bordePeriodico()
-        #print("Num Vecinos del ave en:",self.pos," = ",len(vecinos[0])+len(vecinos[1])+len(vecinos[2]))
-        #print("Los Vecinos son:",[vecino.pos for vecino in vecinos[0]],[vecino.pos for vecino in vecinos[1]],[vecino.pos for vecino in vecinos[2]])
         self.draw(ventana)
 
     def bordePeriodico(self):
@@ -105,10 +103,10 @@ def ReglaSeparacion(ponderacion, ave, vecinos):
         for vecino in vecinos:
             dif = vectorDifToro(ave.pos, vecino.pos)
             mag = np.linalg.norm(dif)
-            while mag == 0:
-                dif = np.random.uniform(-1, 1, 2)
+            while mag == 0: # Si dos aves estuvieran en la misma posición, se crea un vector aleatorio 
+                dif = np.random.uniform(-1, 1, 2) # Las componentes del vector están entre -1 y 1
                 mag = np.linalg.norm(dif)
-            magInversa = config.radioSeparacion/mag # magnitud que se hace mas fuerte mientras mas cerca se este al ave
+            magInversa = config.radioSeparacion/mag**2 # magnitud se hace mas fuerte mientras mas cerca se este al ave
             difPosiciones.append(dif*magInversa)
         vel = np.sum(np.array(difPosiciones), axis=0) # Se suman los vectores de diferencia 
         return vel * ponderacion
@@ -118,10 +116,8 @@ def ReglaAlineamiento(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
         return np.array([0.0,0.0])
     else:
-        velocidades = []
-        for vecino in vecinos:
-            velocidades.append(vecino.vel-ave.vel)
-        velocidades = np.array(velocidades)
+        velocidades = np.array([vecino.vel for vecino in vecinos])
+        velocidades -= ave.vel
         vel = velocidades.mean(axis=0)
         return vel * ponderacion
 
@@ -132,7 +128,7 @@ def ReglaCohesion(ponderacion, ave, vecinos):
     else:
         posPromedioV = np.array([0.0,0.0])
         for vecino in vecinos:
-            posPromedioV += np.add(ave.pos,vectorDifToro(vecino.pos, ave.pos)) # Sumar las posiciones de los vecinos (considerando cond borde periodicas)
+            posPromedioV += vectorDifToro(vecino.pos, ave.pos)
         vel = posPromedioV/len(vecinos) # Posicion promedio de los vecinos
         return vel * ponderacion
 
@@ -141,6 +137,7 @@ def MovAleatorio(ponderacion):
     vel = np.random.uniform(-10, 10, 2)*ponderacion
     return vel * ponderacion
 
+# REVISAR ESTA FUNCION
 
 def vectorDifToro(P1, P2):
     # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas

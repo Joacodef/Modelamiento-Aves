@@ -16,9 +16,6 @@ def rellenarGrillaVecinos(aves):
     for ave in aves:
         posXAve = int(ave.pos[0]/config.radioCohesion)
         posYAve = int(ave.pos[1]/config.radioCohesion)
-        if posXAve < 0 or posYAve < 0:
-            print("posXAve",posXAve,"ave.pos[0]",ave.pos[0])
-            print("posYAve",posYAve,"ave.pos[1]",ave.pos[1])
         if posXAve+1 > dimXGrillaV:
             posXAve -= 1            
         if posYAve+1 > dimYGrillaV:
@@ -55,6 +52,10 @@ while config.running:
     grillaVecinos = rellenarGrillaVecinos(aves)
     #print("\n\n=========================================\n\n")
     for ave in aves:
+        """
+        contador += 1
+        if  contador % config.numAves == 1:
+            print("velocidad",ave.vel,"pos",ave.pos)"""
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
         ave.actualizar(ventana, grillaVecinos)
         # Sumarle 1 al contador de aves de esa casilla
