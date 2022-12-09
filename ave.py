@@ -8,7 +8,7 @@ import config
 def generarAves(numAves):
     aveList = []
     for _ in range(numAves):
-        aveList.append(Ave(pos=np.array([random.uniform(0.0, config.mapWidth), random.uniform(0.0, config.mapHeight)])))
+        aveList.append(Ave(pos=np.array([random.uniform(0.0, config.ladoMapa), random.uniform(0.0, config.ladoMapa)])))
     return aveList
         
 
@@ -24,9 +24,12 @@ def getvecinos(ave, grillaVecinos):
             posX -= 1
         if posY > dimYGrillaV-1:
             posY -= 1
-        for i in [(posY-1)%dimYGrillaV,posY,(posY+1)%dimYGrillaV]:
-            for j in [(posX-1)%dimXGrillaV,posX,(posX+1)%dimXGrillaV]:
+        for i in [posY,(posY-1)%dimYGrillaV,(posY+1)%dimYGrillaV]:
+            for j in [posX,(posX-1)%dimXGrillaV,(posX+1)%dimXGrillaV]:
                 for aveV in grillaVecinos[i][j]:
+                    if len(listaSeparacion)>config.numMaxVecinos and len(listaAlineamiento)>config.numMaxVecinos \
+                        and len(listaCohesion)>config.numMaxVecinos:
+                        break
                     distanciaAves = np.linalg.norm(vectorDifToro(aveV.pos, ave.pos))
                     if distanciaAves == 0.0:
                         continue
@@ -50,17 +53,13 @@ class Ave():
         vecinos = getvecinos(self, grillaVecinos) # [listaSeparacion, listaAlineamiento, listaCohesion]
         acel = self.calcularReglas(vecinos)
         self.vel += (acel - config.airDragCoeff*self.vel) 
-        """
-        rapi = np.linalg.norm(self.vel) 
-        if rapi > config.maxRapidez:
-            self.vel = config.maxRapidez*self.vel/rapi"""
         self.pos += self.vel
         self.bordePeriodico()
         self.draw(ventana)
 
     def bordePeriodico(self):
-        self.pos[0] = self.pos[0]%config.mapWidth
-        self.pos[1] = self.pos[1]%config.mapHeight
+        self.pos[0] = self.pos[0]%config.ladoMapa
+        self.pos[1] = self.pos[1]%config.ladoMapa
 
     def draw(self, ventana):
         if config.verAves:
@@ -94,7 +93,6 @@ class Ave():
 
     #==========FIN CLASE AVE===========#
 
-
 def ReglaSeparacion(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
         return np.array([0,0])
@@ -111,7 +109,6 @@ def ReglaSeparacion(ponderacion, ave, vecinos):
         vel = np.sum(np.array(difPosiciones), axis=0) # Se suman los vectores de diferencia 
         return vel * ponderacion
 
-
 def ReglaAlineamiento(ponderacion, ave, vecinos):
     if len(vecinos) < 1:
         return np.array([0.0,0.0])
@@ -120,7 +117,6 @@ def ReglaAlineamiento(ponderacion, ave, vecinos):
         velocidades -= ave.vel
         vel = velocidades.mean(axis=0)
         return vel * ponderacion
-
 
 def ReglaCohesion(ponderacion, ave, vecinos):   
     if len(vecinos) < 1:
@@ -132,27 +128,24 @@ def ReglaCohesion(ponderacion, ave, vecinos):
         vel = posPromedioV/len(vecinos) # Posicion promedio de los vecinos
         return vel * ponderacion
 
-
 def MovAleatorio(ponderacion):
     vel = np.random.uniform(-10, 10, 2)*ponderacion
     return vel * ponderacion
-
-# REVISAR ESTA FUNCION
 
 def vectorDifToro(P1, P2):
     # Obtener un vector que apunta desde P2 a P1, considerando condiciones de borde periodicas
     distX = P1[0] - P2[0]
     distY = P1[1] - P2[1]
     # Ver si la distancia en uno de los ejes es mayor que la mitad del plano, se "va por el otro lado"
-    if abs(distX) > config.mapWidth/2:
-        # Esto implica invertir la dirección de movimiento en ese eje también
+    if abs(distX) > config.ladoMapa/2:
+        # Esto implica invertir la dirección de movimiento de esa componente
         if distX > 0:
-            distX = -(config.mapWidth - abs(distX))
+            distX = -(config.ladoMapa - abs(distX))
         else:
-            distX = config.mapWidth - abs(distX)
-    if abs(distY) > config.mapHeight/2:
+            distX = config.ladoMapa - abs(distX)
+    if abs(distY) > config.ladoMapa/2:
         if distY > 0:
-            distY = -(config.mapWidth - abs(distY))
+            distY = -(config.ladoMapa - abs(distY))
         else:
-            distY = config.mapWidth - abs(distY)
+            distY = config.ladoMapa - abs(distY)
     return np.array([distX, distY])
