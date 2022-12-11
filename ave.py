@@ -3,7 +3,7 @@ import numpy as np
 import pygame
 import config
 
-#random.seed(3)
+random.seed(3)
 
 def generarAves(numAves):
     aveList = []

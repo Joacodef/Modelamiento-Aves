@@ -40,7 +40,7 @@ clock = pygame.time.Clock()
 
 while config.running:
     # Grilla de campos se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
-    grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
+    grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0.0,0.0])
 
     ventana.fill(config.colorFondo)
 
@@ -64,7 +64,44 @@ while config.running:
             maxRapidez = np.linalg.norm(ave.vel)
             print("max rapi",maxRapidez)"""
 
-    # Mostrar líneas de la grilla de velocidades y densidad:
+    # Actualizar y guardar datos de grilla de campos:
+    for i in range(0,config.numDivisionesLado):    
+        for j in range(0,config.numDivisionesLado):
+            if grillaCampo[i][j][0] != 0:
+                    grillaCampo[i][j][1] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad horizontal (vel[0]/numAvesEnCasilla) 
+                    grillaCampo[i][j][2] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad vertical
+            file.write(str(i)+","+str(j)+","+str(grillaCampo[i][j][0])+","+str(grillaCampo[i][j][1])+","+str(grillaCampo[i][j][2])+";")
+            if config.verMapaCalor:
+                cantAves = grillaCampo[i][j][0]
+                min = 20
+                max = 60
+                if cantAves > max:
+                    rojo = 255
+                    verde = 25
+                    azul = 50                   
+                elif cantAves < min:
+                    rojo = 0
+                    verde = 0
+                    azul = 0
+                else:
+                    factorEscala = 250/(max-min)
+                    rojo = int(cantAves*factorEscala-factorEscala*min)
+                    verde = int(cantAves*factorEscala/10)
+                    azul = int(cantAves*factorEscala/8)
+                color = (rojo,verde,azul)
+                pygame.draw.rect(ventana, color, pygame.Rect(j*160, i*160, 160, 160))
+                
+            # Mostrar números de la grilla de campos
+            if config.verValoresGrillaCampos:
+                font = pygame.font.SysFont('arial', config.fontSize)
+                if config.verMapaCalor == True:
+                    color = (255,255,255)
+                else:
+                    color = (0,0,0)
+                text = font.render(str(int(grillaCampo[i][j][0])), True, color)
+                ventana.blit(text, [j*anchoCasilla+anchoCasilla/2-5,i*altoCasilla+altoCasilla/2-15])   
+
+     # Mostrar líneas de la grilla de velocidades y densidad:
     if config.verGrillaCampos:
         for i in range(1,config.numDivisionesLado):
             pygame.draw.line(ventana, config.colorLinea, (i * config.ladoMapa/config.numDivisionesLado,0), (i * config.ladoMapa/config.numDivisionesLado, config.ladoMapa))
@@ -77,19 +114,6 @@ while config.running:
         for j in range(1,dimXGrillaV):
             pygame.draw.line(ventana, config.colorLinea, (0,j * config.radioCohesion), (config.ladoMapa, j * config.radioCohesion))
 
-    # Actualizar y guardar datos de grilla de campos:
-    for i in range(0,config.numDivisionesLado):    
-        for j in range(0,config.numDivisionesLado):
-            if grillaCampo[i][j][0] != 0:
-                    grillaCampo[i][j][1] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad horizontal (vel[0]/numAvesEnCasilla) 
-                    grillaCampo[i][j][2] /= grillaCampo[i][j][0] # Sacar el promedio de velocidad vertical
-            file.write(str(i)+","+str(j)+","+str(grillaCampo[i][j][0])+","+str(grillaCampo[i][j][1])+","+str(grillaCampo[i][j][2])+";")
-            
-            # Mostrar números de la grilla de velocidades y densidad:
-            if config.verValoresGrillaCampos:
-                font = pygame.font.SysFont('arial', config.fontSize)
-                text = font.render(str(grillaCampo[i][j]), True, (0, 0, 0))
-                ventana.blit(text, [j*anchoCasilla+anchoCasilla/2-30,i*altoCasilla+altoCasilla/2-15])
     file.write("\n")
 
     #Limitar a 30 los cuadros por segundo (fps):
