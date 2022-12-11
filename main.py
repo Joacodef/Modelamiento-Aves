@@ -36,6 +36,8 @@ altoCasilla = config.ladoMapa/config.numDivisionesLado
 
 clock = pygame.time.Clock()
 
+#maxRapidez = 0.0
+
 while config.running:
     # Grilla de campos se resetea, rellena con [numAves, velocidad[0], velocidad[1]]:
     grillaCampo = np.full((config.numDivisionesLado,config.numDivisionesLado,3), [0,0,0])
@@ -48,7 +50,7 @@ while config.running:
             config.running = False
 
     grillaVecinos = rellenarGrillaVecinos(aves)
-
+    
     # Actualización de las aves:
     for ave in aves:
         coordG = [int((ave.pos[1]-1)/altoCasilla),int((ave.pos[0]-1)/anchoCasilla)] # Notar que las posiciones en la grilla son (fila, columna) y en el mapa son (x, y) (están al revés)
@@ -58,6 +60,9 @@ while config.running:
         # Sumar un total de velocidad horizontal y vertical (para después sacar el promedio)
         grillaCampo[coordG[0],coordG[1]][1] += ave.vel[0]
         grillaCampo[coordG[0],coordG[1]][2] += ave.vel[1]
+        """if maxRapidez < np.linalg.norm(ave.vel):
+            maxRapidez = np.linalg.norm(ave.vel)
+            print("max rapi",maxRapidez)"""
 
     # Mostrar líneas de la grilla de velocidades y densidad:
     if config.verGrillaCampos:

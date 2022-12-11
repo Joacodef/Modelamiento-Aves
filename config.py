@@ -1,10 +1,10 @@
-ladoMapa = 1000
+ladoMapa = 800
 
 running = True
 
 maxRapidez = 1
-numAves = 2000
-aveSize = 3
+numAves = 300
+aveSize = 2
 # Los radios deben cumplir: radioSeparacion <= radioAlineamiento <= radioCohesion
 radioSeparacion = 25
 radioAlineamiento = 32
