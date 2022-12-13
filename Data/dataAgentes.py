@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-NUM_CASILLA = 2
+NUM_CASILLA = 12
 NUM_CASILLA_SUP = (NUM_CASILLA-5)%25
 NUM_CASILLA_INF = (NUM_CASILLA+5)%25
 NUM_CASILLA_IZQ = (NUM_CASILLA-1)%5+(NUM_CASILLA-NUM_CASILLA%5)
@@ -14,7 +14,7 @@ VELOCIDAD_VERT = 4
 
 DATA = DENSIDAD
 
-df = pd.read_csv("registro4.txt",sep=";",header=None)
+df = pd.read_csv("registro5.txt",sep=";",header=None)
 casilla = []
 casilla_sup = []
 casilla_inf = []
@@ -47,14 +47,14 @@ ticks = list(range(0,len(casilla)))
 casilla = np.array(casilla)
 
 plt.plot(ticks,casilla)
-#plt.plot(ticks,casilla_izq)
-#plt.plot(ticks,casilla_der)
+plt.plot(ticks,casilla_izq)
+plt.plot(ticks,casilla_der)
 #plt.plot(ticks,casilla_inf)
 #plt.plot(ticks,casilla_sup)
 
 plt.xlabel('Ticks')
 plt.ylabel('Número de Aves')
 
-plt.legend(['poblacion casilla '+str(NUM_CASILLA) ]) #,'casilla izquierda',''
+plt.legend(['densidad casilla '+str(NUM_CASILLA),'casilla izquierda','casilla derecha' ]) #,'casilla izquierda',''
 
 plt.show()

@@ -74,7 +74,7 @@ while config.running:
             if config.verMapaCalor:
                 cantAves = grillaCampo[i][j][0]
                 min = 20
-                max = 60
+                max = 500
                 if cantAves > max:
                     rojo = 255
                     verde = 25

@@ -9,7 +9,8 @@ def generarAves(numAves):
     aveList = []
     for _ in range(numAves):
         #aveList.append(Ave(pos=np.array([random.uniform(0.0, config.ladoMapa), random.uniform(0.0, config.ladoMapa)])))
-        aveList.append(Ave(pos=np.array([random.uniform(320, 480), random.uniform(320, 480)])))
+        #aveList.append(Ave(pos=np.array([random.uniform(320, 480), random.uniform(320, 480)])))
+        aveList.append(Ave(pos=np.array([random.uniform(320, 480), random.uniform(0.0, config.ladoMapa)])))
     return aveList
         
 
