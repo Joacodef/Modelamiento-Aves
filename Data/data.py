@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 NUM_CASILLA = 2
 NUM_CASILLA_SUP = (NUM_CASILLA-5)%25
@@ -13,7 +14,7 @@ VELOCIDAD_VERT = 4
 
 DATA = DENSIDAD
 
-df = pd.read_csv("registro2.txt",sep=";",header=None)
+df = pd.read_csv("registro4.txt",sep=";",header=None)
 casilla = []
 casilla_sup = []
 casilla_inf = []
@@ -22,29 +23,28 @@ casilla_der = []
 
 for data in df[NUM_CASILLA]:
     numeros = data.split(",")
-    print(numeros)
     #casilla.append([int(numeros[2]),int(numeros[3]),int(numeros[4])])
-    casilla.append(int(numeros[DATA]))
+    casilla.append(float(numeros[DATA]))
 for data in df[NUM_CASILLA_SUP]:
     numeros = data.split(",")
     #casilla.append([int(numeros[2]),int(numeros[3]),int(numeros[4])])
-    casilla_sup.append(int(numeros[DATA]))
+    casilla_sup.append(float(numeros[DATA]))
 for data in df[NUM_CASILLA_INF]:
     numeros = data.split(",")
     #casilla.append([int(numeros[2]),int(numeros[3]),int(numeros[4])])
-    casilla_inf.append(int(numeros[DATA]))
+    casilla_inf.append(float(numeros[DATA]))
 for data in df[NUM_CASILLA_DER]:
     numeros = data.split(",")
     #casilla.append([int(numeros[2]),int(numeros[3]),int(numeros[4])])
-    casilla_der.append(int(numeros[DATA]))
+    casilla_der.append(float(numeros[DATA]))
 for data in df[NUM_CASILLA_IZQ]:
     numeros = data.split(",")
     #casilla.append([int(numeros[2]),int(numeros[3]),int(numeros[4])])
-    casilla_izq.append(int(numeros[DATA]))
-
+    casilla_izq.append(float(numeros[DATA]))
 #print(casillaCero)
 
 ticks = list(range(0,len(casilla)))
+casilla = np.array(casilla)
 
 plt.plot(ticks,casilla)
 #plt.plot(ticks,casilla_izq)

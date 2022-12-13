@@ -17,7 +17,7 @@ pesoSeparacion = 0.1
 pesoAlineamiento = 0.04
 pesoCohesion = 0.002
 pesoMovAleatorio = 0.2
-airDragCoeff = 0.02
+airDragCoeff = 0.01
 
 colorFondo = (255, 255, 255)
 colorAves = (0,0,150)
