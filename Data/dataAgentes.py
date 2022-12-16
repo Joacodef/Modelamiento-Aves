@@ -47,14 +47,14 @@ ticks = list(range(0,len(casilla)))
 casilla = np.array(casilla)
 
 plt.plot(ticks,casilla)
-plt.plot(ticks,casilla_izq)
-plt.plot(ticks,casilla_der)
+#plt.plot(ticks,casilla_izq)
+#plt.plot(ticks,casilla_der)
 #plt.plot(ticks,casilla_inf)
 #plt.plot(ticks,casilla_sup)
 
 plt.xlabel('Ticks')
 plt.ylabel('Número de Aves')
 
-plt.legend(['densidad casilla '+str(NUM_CASILLA),'casilla izquierda','casilla derecha' ]) #,'casilla izquierda',''
+plt.legend(['densidad casilla '+str(NUM_CASILLA)]) #,'casilla izquierda','casilla derecha' 
 
 plt.show()
